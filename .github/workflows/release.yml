@@ -17,12 +17,15 @@ jobs:
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - run: |
           for dir in $(find . -type d -name "UE_*"); do
-            zip -qq "${{ github.event.repository.name }}_$( echo $dir | sed 's/^\.//g' | sed 's/\///g')-$RELEASE_VERSION.zip" $dir/.* *
+            cd "$dir"
+            zip -qq -r "../${{ github.event.repository.name }}_$( echo $dir | sed 's/^\.//g' | sed 's/\///g')-$RELEASE_VERSION.zip" .
+            cd ..
           done
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
+          draft: true
           files: |
             *_UE_*-*.zip
           
