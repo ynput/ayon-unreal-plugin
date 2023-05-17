@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1-beta",
+	"FriendlyName": "Ayon",
+	"Description": "Ayon Integration",
+	"Category": "Ayon.Integration",
+	"CreatedBy": "YNPUT",
+	"CreatedByURL": "https://ayon.ynput.io",
+	"DocsURL": "https://ayon.ynput.io/docs/artist_hosts_unreal",
+	"MarketplaceURL": "",
+	"SupportURL": "https://ynput.io/",
+	"CanContainContent": true,
+	"EngineVersion": "5.1",
+	"IsExperimentalVersion": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "Ayon",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
