@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.1-beta",
+	"VersionName": "0.1.0-beta",
 	"FriendlyName": "Ayon",
 	"Description": "Ayon Integration",
 	"Category": "Ayon.Integration",

@@ -1,0 +1,28 @@
+name: 🚀 Create Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    name: "Release from tag"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create ZIP files 
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - run: |
+          for dir in $(find . -type d -name "UE_*"); do
+            zip -r "${{ github.event.repository.name }}_${dir}-$RELEASE_VERSION.zip" "$dir"
+          done
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            *_UE_*-*.zip
+          
