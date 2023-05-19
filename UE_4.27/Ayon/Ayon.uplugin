@@ -13,11 +13,13 @@
 	"EngineVersion": "4.27",
 	"CanContainContent": true,
 	"Installed": true,
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dcf9786222b9403aa2f6310d6c388220",
 	"Modules": [
 		{
 			"Name": "Ayon",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": ["Win64", "Linux"]
 		}
 	]
 }

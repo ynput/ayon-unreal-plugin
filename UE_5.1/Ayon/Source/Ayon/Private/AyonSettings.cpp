@@ -1,5 +1,4 @@
-// Copyright 2023, Ayon, All rights reserved.
-
+// Copyright (c) 2023 Ynput s.r.o
 #include "AyonSettings.h"
 
 #include "Interfaces/IPluginManager.h"

@@ -1,4 +1,4 @@
-// Copyright 2023, Ayon, All rights reserved.
+// Copyright (c) 2023 Ynput s.r.o
 #pragma once
 
 

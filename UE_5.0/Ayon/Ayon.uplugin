@@ -14,11 +14,13 @@
 	"EngineVersion": "5.0",
 	"IsExperimentalVersion": false,
 	"Installed": true,
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dcf9786222b9403aa2f6310d6c388220",
 	"Modules": [
 		{
 			"Name": "Ayon",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"PlatformAllowList": ["Win64", "Linux"]
 		}
 	]
 }

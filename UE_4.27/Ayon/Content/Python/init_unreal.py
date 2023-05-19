@@ -1,3 +1,5 @@
+# Copyright (c) 2023 Ynput s.r.o
+"""Interface with AYON code."""
 import unreal
 
 ayon_detected = True
@@ -9,7 +11,7 @@ try:
 except ImportError as exc:
     ayon_host = None
     ayon_detected = False
-    unreal.log_error(f"OpenPype: cannot load Ayon [ {exc} ]")
+    unreal.log_error(f"Ayon: cannot load Ayon [ {exc} ]")
 
 if ayon_detected:
     install_host(ayon_host)
