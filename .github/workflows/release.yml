@@ -18,7 +18,7 @@ jobs:
       - run: |
           for dir in $(find . -type d -name "UE_*"); do
             cd "$dir"
-            zip -qq -r "../${{ github.event.repository.name }}_$( echo $dir | sed 's/^\.//g' | sed 's/\///g')-$RELEASE_VERSION.zip" .
+            zip -qq -r "../${{ github.event.repository.name }}_$( echo $dir | sed 's/^\.//g' | sed 's/\///g')-$RELEASE_VERSION.zip" ./Ayon
             cd ..
           done
       - uses: "marvinpinto/action-automatic-releases@latest"
