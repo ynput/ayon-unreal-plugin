@@ -1,3 +1,4 @@
+// Copyright (c) 2023 Ynput s.r.o.
 #include "AyonAssetContainerFactory.h"
 #include "AyonAssetContainer.h"
 

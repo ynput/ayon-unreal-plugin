@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o
+// Copyright (c) 2023 Ynput s.r.o.
 // Deprecation warning: this is left here just for backwards compatibility
 // and will be removed in next versions of Ayon.
 #include "AyonPublishInstanceFactory.h"
