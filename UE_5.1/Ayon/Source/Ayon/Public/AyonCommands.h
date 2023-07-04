@@ -19,6 +19,8 @@ public:
 	virtual void RegisterCommands() override;
 
 public:
-	TSharedPtr< FUICommandInfo > AyonTools;
-	TSharedPtr< FUICommandInfo > AyonToolsDialog;
+	TSharedPtr< FUICommandInfo > AyonLoaderTool;
+	TSharedPtr< FUICommandInfo > AyonCreatorTool;
+	TSharedPtr< FUICommandInfo > AyonSceneInventoryTool;
+	TSharedPtr< FUICommandInfo > AyonPublishTool;
 };

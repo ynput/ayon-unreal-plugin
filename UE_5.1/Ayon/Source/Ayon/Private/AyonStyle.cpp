@@ -41,8 +41,7 @@ TSharedRef< FSlateStyleSet > FAyonStyle::Create()
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("AyonStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("Ayon")->GetBaseDir() / TEXT("Resources"));
 
-	Style->Set("Ayon.AyonTools", new IMAGE_BRUSH(TEXT("ayon40"), Icon40x40));
-	Style->Set("Ayon.AyonToolsDialog", new IMAGE_BRUSH(TEXT("ayon40"), Icon40x40));
+	Style->Set("Ayon.AyonMenu", new IMAGE_BRUSH(TEXT("ayon40"), Icon40x40));
 
 	return Style;
 }

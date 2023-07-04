@@ -30,7 +30,8 @@ public class Ayon : ModuleRules
 			new string[]
 			{
 				"Core",
-				"CoreUObject"
+				"CoreUObject",
+				"WebSockets",
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -49,7 +50,10 @@ public class Ayon : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"AssetTools"
+				"AssetTools",
+                "Json",
+                "JsonUtilities",
+                "PythonScriptPlugin",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
