@@ -24,5 +24,5 @@ private:
 	void MapCommands();
 
 private:
-	TSharedPtr<class FUICommandList> PluginCommands;
+	TSharedPtr<class FUICommandList> AyonCommands;
 };

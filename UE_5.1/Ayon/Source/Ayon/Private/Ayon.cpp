@@ -54,6 +54,12 @@ void FAyonModule::ShutdownModule()
 	FAyonCommands::Unregister();
 }
 
+TSharedRef<SWidget> FAyonModule::GenerateAyonMenuContent(TSharedRef<FUICommandList> InCommandList)
+{
+	FToolMenuContext MenuContext(InCommandList);
+
+	return UToolMenus::Get()->GenerateWidget("LevelEditor.LevelEditorToolBar.Ayon", MenuContext);
+}
 
 void FAyonModule::RegisterSettings()
 {
