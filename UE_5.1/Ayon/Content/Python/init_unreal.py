@@ -29,7 +29,8 @@ from pipeline import (
 
 from plugin import (
     create_look,
-    create_render,
+    create_render_with_new_sequence,
+    create_render_from_existing_sequence,
     create_unique_asset_name,
     add_level_to_world,
     list_assets,
@@ -86,7 +87,8 @@ __all__ = [
     "containerise",
     "instantiate",
     "create_look",
-    "create_render",
+    "create_render_with_new_sequence",
+    "create_render_from_existing_sequence",
     "create_unique_asset_name",
     "add_level_to_world",
     "list_assets",

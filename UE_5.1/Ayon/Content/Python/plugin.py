@@ -54,53 +54,124 @@ def create_look(params):
     return {"return": members}
 
 
-def create_render(params):
+def create_render_with_new_sequence(params):
     """
     Args:
         params (str): string containing a dictionary with parameters:
-            path (str): path to the instance
-            selected_asset (str): path to the selected asset
+            selected_asset_path (str): path to the selected asset
+            use_hierarchy (bool): whether to use the hierarchy
     """
-    selected_asset_path = get_params(params, 'path', 'selected_asset')
+
+    sequence_dir, subset_name, start_frame, end_frame = get_params(
+        params, 'sequence_dir', 'subset_name', 'start_frame', 'end_frame')
+
+    # Create a new folder for the sequence in root
+    unreal.EditorAssetLibrary.make_directory(sequence_dir)
+
+    unreal.log_warning(f"sequence_dir: {sequence_dir}")
+
+    # Create the level sequence
+    asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
+    seq = asset_tools.create_asset(
+        asset_name=subset_name,
+        package_path=sequence_dir,
+        asset_class=unreal.LevelSequence,
+        factory=unreal.LevelSequenceFactoryNew())
+
+    seq.set_playback_start(start_frame)
+    seq.set_playback_end(end_frame)
+
+    unreal.EditorAssetLibrary.save_asset(seq.get_path_name())
+
+    # Create the master level
+    if UNREAL_VERSION.major >= 5:
+        curr_level = unreal.LevelEditorSubsystem().get_current_level()
+    else:
+        world = unreal.EditorLevelLibrary.get_editor_world()
+        levels = unreal.EditorLevelUtils.get_levels(world)
+        curr_level = levels[0] if len(levels) else None
+        if not curr_level:
+            raise RuntimeError("No level loaded.")
+    curr_level_path = curr_level.get_outer().get_path_name()
+
+    # If the level path does not start with "/Game/", the current
+    # level is a temporary, unsaved level.
+    if curr_level_path.startswith("/Game/"):
+        if UNREAL_VERSION.major >= 5:
+            unreal.LevelEditorSubsystem().save_current_level()
+        else:
+            unreal.EditorLevelLibrary.save_current_level()
+
+    ml_path = f"{sequence_dir}/{subset_name}_MasterLevel"
+
+    if UNREAL_VERSION.major >= 5:
+        unreal.LevelEditorSubsystem().new_level(ml_path)
+    else:
+        unreal.EditorLevelLibrary.new_level(ml_path)
+
+    seq_data = {
+        "sequence": seq,
+        "output": f"{seq.get_name()}",
+        "frame_range": (
+            seq.get_playback_start(),
+            seq.get_playback_end())}
+
+    return ml_path, seq.get_path_name(), seq_data
+
+
+def create_render_from_existing_sequence(params):
+    """
+    Args:
+        params (str): string containing a dictionary with parameters:
+            selected_asset_path (str): path to the selected asset
+            use_hierarchy (bool): whether to use the hierarchy
+    """
+    selected_asset_path, use_hierarchy = get_params(
+        params, 'selected_asset_path', 'use_hierarchy')
 
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
     selected_asset = ar.get_asset_by_object_path(
         selected_asset_path).get_asset()
 
-    if selected_asset.get_class().get_name() != "LevelSequence":
-        unreal.log_error(
-            f"Skipping {selected_asset.get_name()}. It isn't a Level "
-            "Sequence.")
-
     # Check if the selected asset is a level sequence asset.
     if selected_asset.get_class().get_name() != "LevelSequence":
         unreal.log_warning(
-            f"Skipping {selected_asset.get_name()}. It isn't a Level "
-            "Sequence.")
+            f"Skipping {selected_asset.get_name()}. It isn't a Level Sequence."
+        )
 
-    # The asset name is the third element of the path which
-    # contains the map.
-    # To take the asset name, we remove from the path the prefix
-    # "/Game/OpenPype/" and then we split the path by "/".
-    sel_path = selected_asset_path
-    asset_name = sel_path.replace("/Game/OpenPype/", "").split("/")[0]
+    if use_hierarchy:
+        # The asset name is the third element of the path which
+        # contains the map.
+        # To take the asset name, we remove from the path the prefix
+        # "/Game/Ayon/" and then we split the path by "/".
+        sel_path = selected_asset_path
+        asset_name = sel_path.replace("/Game/Ayon/", "").split("/")[0]
+
+        search_path = f"/Game/Ayon/{asset_name}"
+    else:
+        search_path = Path(selected_asset_path).parent.as_posix()
 
     # Get the master sequence and the master level.
     # There should be only one sequence and one level in the directory.
-    ar_filter = unreal.ARFilter(
-        class_names=["LevelSequence"],
-        package_paths=[f"/Game/OpenPype/{asset_name}"],
-        recursive_paths=False)
-    sequences = ar.get_assets(ar_filter)
-    master_seq = sequences[0].get_asset().get_path_name()
-    master_seq_obj = sequences[0].get_asset()
-    ar_filter = unreal.ARFilter(
-        class_names=["World"],
-        package_paths=[f"/Game/OpenPype/{asset_name}"],
-        recursive_paths=False)
-    levels = ar.get_assets(ar_filter)
-    master_lvl = levels[0].get_asset().get_path_name()
+    try:
+        ar_filter = unreal.ARFilter(
+            class_names=["LevelSequence"],
+            package_paths=[search_path],
+            recursive_paths=False)
+        sequences = ar.get_assets(ar_filter)
+        master_seq = sequences[0].get_asset().get_path_name()
+        master_seq_obj = sequences[0].get_asset()
+        ar_filter = unreal.ARFilter(
+            class_names=["World"],
+            package_paths=[search_path],
+            recursive_paths=False)
+        levels = ar.get_assets(ar_filter)
+        master_lvl = levels[0].get_asset().get_path_name()
+    except IndexError as e:
+        raise RuntimeError(
+            "Could not find the hierarchy for the selected sequence."
+        ) from e
 
     # If the selected asset is the master sequence, we get its data
     # and then we create the instance for the master sequence.
@@ -116,7 +187,7 @@ def create_render(params):
             master_seq_obj.get_playback_start(),
             master_seq_obj.get_playback_end())}
 
-    if selected_asset_path == master_seq:
+    if selected_asset_path == master_seq or use_hierarchy:
         return master_seq, master_lvl, master_seq_data
 
     seq_data_list = [master_seq_data]
