@@ -9,7 +9,7 @@ from helpers import (
 )
 
 UNREAL_VERSION = semver.VersionInfo(
-    *os.getenv("OPENPYPE_UNREAL_VERSION").split(".")
+    *os.getenv("AYON_UNREAL_VERSION").split(".")
 )
 
 
@@ -52,7 +52,7 @@ def imprint(params):
             loaded_asset, key, str(value)
         )
 
-    with unreal.ScopedEditorTransaction("OpenPype containerising"):
+    with unreal.ScopedEditorTransaction("Ayon containerising"):
         unreal.EditorAssetLibrary.save_asset(node)
 
 
@@ -134,9 +134,9 @@ def create_container(params):
 
 
 def create_publish_instance(params):
-    """Helper function to create OpenPype Publish Instance on given path.
+    """Helper function to create Ayon Publish Instance on given path.
 
-    This behaves similarly as :func:`create_openpype_container`.
+    This behaves similarly as :func:`create_container`.
 
     Args:
         params (str): string containing a dictionary with parameters:
@@ -157,7 +157,7 @@ def create_publish_instance(params):
     """
     instance, path = get_params(params, "instance", "path")
 
-    factory = unreal.OpenPypePublishInstanceFactory()
+    factory = unreal.AyonPublishInstanceFactory()
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     return {"return": tools.create_asset(instance, path, None, factory)}
 
@@ -171,13 +171,13 @@ def ls():
     """
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
     class_name = [
-        "/Script/OpenPype",
-        "AssetContainer"
+        "/Script/Ayon",
+        "AyonAssetContainer"
     ] if (
             UNREAL_VERSION.major == 5
             and UNREAL_VERSION.minor > 0
-    ) else "AssetContainer"  # noqa
-    openpype_containers = ar.get_assets_by_class(class_name, True)
+    ) else "AyonAssetContainer"  # noqa
+    ayon_containers = ar.get_assets_by_class(class_name, True)
 
     containers = []
 
@@ -185,7 +185,7 @@ def ls():
     # load asset. get_tag_values() work only on metadata registered in
     # Asset Registry Project settings (and there is no way to set it with
     # python short of editing ini configuration file).
-    for asset_data in openpype_containers:
+    for asset_data in ayon_containers:
         asset = asset_data.get_asset()
         data = unreal.EditorAssetLibrary.get_metadata_tag_values(asset)
         data["objectName"] = asset_data.asset_name
@@ -200,13 +200,13 @@ def ls_inst():
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
     # UE 5.1 changed how class name is specified
     class_name = [
-        "/Script/OpenPype",
-        "OpenPypePublishInstance"
+        "/Script/Ayon",
+        "AyonPublishInstance"
     ] if (
             UNREAL_VERSION.major == 5
             and UNREAL_VERSION.minor > 0
-    ) else "OpenPypePublishInstance"  # noqa
-    openpype_instances = ar.get_assets_by_class(class_name, True)
+    ) else "AyonPublishInstance"  # noqa
+    ayon_instances = ar.get_assets_by_class(class_name, True)
 
     instances = []
 
@@ -214,7 +214,7 @@ def ls_inst():
     # load asset. get_tag_values() work only on metadata registered in
     # Asset Registry Project settings (and there is no way to set it with
     # python short of editing ini configuration file).
-    for asset_data in openpype_instances:
+    for asset_data in ayon_instances:
         asset = asset_data.get_asset()
         data = unreal.EditorAssetLibrary.get_metadata_tag_values(asset)
         data["objectName"] = asset_data.asset_name
