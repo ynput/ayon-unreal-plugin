@@ -127,7 +127,7 @@ def create_container(params):
     """
     container, path = get_params(params, "container", "path")
 
-    factory = unreal.AssetContainerFactory()
+    factory = unreal.AyonAssetContainerFactory()
     tools = unreal.AssetToolsHelpers().get_asset_tools()
 
     return {"return": tools.create_asset(container, path, None, factory)}

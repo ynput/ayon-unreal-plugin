@@ -886,7 +886,7 @@ def add_animation_to_sequencer(params):
             ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
             _filter = unreal.ARFilter(
-                class_names=["AssetContainer"],
+                class_names=["AyonAssetContainer"],
                 package_paths=[anim_path],
                 recursive_paths=False)
             containers = ar.get_assets(_filter)
