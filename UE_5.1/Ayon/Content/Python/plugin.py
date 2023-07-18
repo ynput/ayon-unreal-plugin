@@ -475,12 +475,86 @@ def get_sequence_frame_range(params):
         sequence.get_playback_start(), sequence.get_playback_end())}
 
 
+def _set_sequence_hierarchy(
+    seq_i_path, seq_j_path, max_frame_i, min_frame_j, max_frame_j, map_paths
+):
+    seq_i = get_asset(seq_i_path)
+    seq_j = get_asset(seq_j_path)
+
+    # Get existing sequencer tracks or create them if they don't exist
+    tracks = seq_i.get_master_tracks()
+    subscene_track = None
+    visibility_track = None
+    for t in tracks:
+        if t.get_class() == unreal.MovieSceneSubTrack.static_class():
+            subscene_track = t
+        if (t.get_class() ==
+                unreal.MovieSceneLevelVisibilityTrack.static_class()):
+            visibility_track = t
+    if not subscene_track:
+        subscene_track = seq_i.add_master_track(unreal.MovieSceneSubTrack)
+    if not visibility_track:
+        visibility_track = seq_i.add_master_track(
+            unreal.MovieSceneLevelVisibilityTrack)
+
+    # Create the sub-scene section
+    subscenes = subscene_track.get_sections()
+    subscene = None
+    for s in subscenes:
+        if s.get_editor_property('sub_sequence') == seq_j:
+            subscene = s
+            break
+    if not subscene:
+        subscene = subscene_track.add_section()
+        subscene.set_row_index(len(subscene_track.get_sections()))
+        subscene.set_editor_property('sub_sequence', seq_j)
+        subscene.set_range(
+            min_frame_j,
+            max_frame_j + 1)
+
+    # Create the visibility section
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+    maps = []
+    for m in map_paths:
+        # Unreal requires to load the level to get the map name
+        unreal.EditorLevelLibrary.save_all_dirty_levels()
+        unreal.EditorLevelLibrary.load_level(m)
+        maps.append(str(ar.get_asset_by_object_path(m).asset_name))
+
+    vis_section = visibility_track.add_section()
+    index = len(visibility_track.get_sections())
+
+    vis_section.set_range(
+        min_frame_j,
+        max_frame_j + 1)
+    vis_section.set_visibility(unreal.LevelVisibility.VISIBLE)
+    vis_section.set_row_index(index)
+    vis_section.set_level_names(maps)
+
+    if min_frame_j > 1:
+        hid_section = visibility_track.add_section()
+        hid_section.set_range(
+            1,
+            min_frame_j)
+        hid_section.set_visibility(unreal.LevelVisibility.HIDDEN)
+        hid_section.set_row_index(index)
+        hid_section.set_level_names(maps)
+    if max_frame_j < max_frame_i:
+        hid_section = visibility_track.add_section()
+        hid_section.set_range(
+            max_frame_j + 1,
+            max_frame_i + 1)
+        hid_section.set_visibility(unreal.LevelVisibility.HIDDEN)
+        hid_section.set_row_index(index)
+        hid_section.set_level_names(maps)
+
+
 def generate_sequence(params):
     """
     Args:
         params (str): string containing a dictionary with parameters:
-            asset_name (str): name of the asset
-            asset_path (str): path to the asset
+            asset_name (str): name of the sequence
+            asset_path (str): path to the sequence
             start_frame (int): start frame of the sequence
             end_frame (int): end frame of the sequence
             fps (int): frames per second
@@ -501,203 +575,151 @@ def generate_sequence(params):
     sequence.set_playback_start(start_frame)
     sequence.set_playback_end(end_frame)
 
-    return {"return": sequence.get_path_name()}
-
-
-def generate_master_sequence(params):
-    """
-    Args:
-        params (str): string containing a dictionary with parameters:
-            asset_name (str): name of the asset
-            asset_path (str): path to the asset
-            start_frame (int): start frame of the sequence
-            end_frame (int): end frame of the sequence
-            fps (int): frames per second
-    """
-    sequence_path = generate_sequence(params).get("return")
-    sequence = get_asset(sequence_path)
+    sequence.set_work_range_start(start_frame / fps)
+    sequence.set_work_range_end(end_frame / fps)
+    sequence.set_view_range_start(start_frame / fps)
+    sequence.set_view_range_end(end_frame / fps)
 
     tracks = sequence.get_master_tracks()
-    track = next(
-        (
-            t
-            for t in tracks
-            if t.get_class().get_name() == "MovieSceneCameraCutTrack"
-        ),
-        None
-    )
+    track = None
+    for t in tracks:
+        if t.get_class().get_name() == "MovieSceneCameraCutTrack":
+            track = t
+            break
     if not track:
-        sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
+        track = sequence.add_master_track(unreal.MovieSceneCameraCutTrack)
 
     return {"return": sequence.get_path_name()}
 
 
-def set_sequence_hierarchy(params):
+def generate_camera_sequence(params):
     """
     Args:
         params (str): string containing a dictionary with parameters:
-            parent_path (str): path to the parent sequence
-            child_path (str): path to the child sequence
-            child_start_frame (int): start frame of the child sequence
-            child_end_frame (int): end frame of the child sequence
     """
-    parent_path, child_path, child_start_frame, child_end_frame = get_params(
-        params, 'parent_path', 'child_path', 'child_start_frame',
-        'child_end_frame')
+    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+     clip_out) = get_params(
+        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
+        'fps', 'clip_in', 'clip_out')
 
-    parent = get_asset(parent_path)
-    child = get_asset(child_path)
-
-    # Get existing sequencer tracks or create them if they don't exist
-    tracks = parent.get_master_tracks()
-    subscene_track = next(
-        (
-            t
-            for t in tracks
-            if t.get_class().get_name() == "MovieSceneSubTrack"
-        ),
-        None,
+    tools = unreal.AssetToolsHelpers().get_asset_tools()
+    cam_seq = tools.create_asset(
+        asset_name=f"{asset}_camera",
+        package_path=asset_dir,
+        asset_class=unreal.LevelSequence,
+        factory=unreal.LevelSequenceFactoryNew()
     )
-    if not subscene_track:
-        subscene_track = parent.add_master_track(
-            unreal.MovieSceneSubTrack)
 
-    # Create the sub-scene section
-    subscenes = subscene_track.get_sections()
-    subscene = next(
-        (
-            s
-            for s in subscenes
-            if s.get_editor_property('sub_sequence') == child
-        ),
-        None,
-    )
-    if not subscene:
-        subscene = subscene_track.add_section()
-        subscene.set_row_index(len(subscene_track.get_sections()))
-        subscene.set_editor_property('sub_sequence', child)
-        subscene.set_range(child_start_frame, child_end_frame + 1)
+    # Add sequences data to hierarchy
+    for i in range(len(sequences) - 1):
+        _set_sequence_hierarchy(
+            sequences[i], sequences[i + 1],
+            frame_ranges[i][1],
+            frame_ranges[i + 1][0], frame_ranges[i + 1][1],
+            [level])
+
+    cam_seq.set_display_rate(unreal.FrameRate(fps, 1.0))
+    cam_seq.set_playback_start(clip_in)
+    cam_seq.set_playback_end(clip_out + 1)
+    _set_sequence_hierarchy(
+        sequences[-1], cam_seq.get_path_name(),
+        frame_ranges[-1][1],
+        clip_in, clip_out,
+        [level])
+
+    return {"return": cam_seq.get_path_name()}
 
 
-def set_sequence_visibility(params):
+def generate_layout_sequence(params):
     """
     Args:
         params (str): string containing a dictionary with parameters:
-            parent_path (str): path to the parent sequence
-            parent_end_frame (int): end frame of the parent sequence
-            child_start_frame (int): start frame of the child sequence
-            child_end_frame (int): end frame of the child sequence
-            map_paths (list): list of paths to the maps
     """
-    (parent_path, parent_end_frame, child_start_frame, child_end_frame,
-     map_paths) = get_params(params, 'parent_path', 'parent_end_frame',
-                             'child_start_frame', 'child_end_frame',
-                             'map_paths')
+    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+     clip_out) = get_params(
+        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
+        'fps', 'clip_in', 'clip_out')
 
-    parent = get_asset(parent_path)
-
-    # Get existing sequencer tracks or create them if they don't exist
-    tracks = parent.get_master_tracks()
-    visibility_track = next(
-        (
-            t
-            for t in tracks
-            if t.get_class().get_name() == "MovieSceneLevelVisibilityTrack"
-        ),
-        None,
+    tools = unreal.AssetToolsHelpers().get_asset_tools()
+    sequence = tools.create_asset(
+        asset_name=f"{asset}",
+        package_path=asset_dir,
+        asset_class=unreal.LevelSequence,
+        factory=unreal.LevelSequenceFactoryNew()
     )
-    if not visibility_track:
-        visibility_track = parent.add_master_track(
-            unreal.MovieSceneLevelVisibilityTrack)
 
-    # Create the visibility section
-    ar = unreal.AssetRegistryHelpers.get_asset_registry()
-    maps = []
-    for m in map_paths:
-        # Unreal requires to load the level to get the map name
-        unreal.EditorLevelLibrary.save_all_dirty_levels()
-        unreal.EditorLevelLibrary.load_level(m)
-        maps.append(str(ar.get_asset_by_object_path(m).asset_name))
+    # Add sequences data to hierarchy
+    for i in range(len(sequences) - 1):
+        _set_sequence_hierarchy(
+            sequences[i], sequences[i + 1],
+            frame_ranges[i][1],
+            frame_ranges[i + 1][0], frame_ranges[i + 1][1],
+            [level])
 
-    vis_section = visibility_track.add_section()
-    index = len(visibility_track.get_sections())
+    sequence.set_display_rate(unreal.FrameRate(fps, 1.0))
+    sequence.set_playback_start(0)
+    sequence.set_playback_end(clip_out - clip_in + 1)
+    _set_sequence_hierarchy(
+        sequences[-1], sequence.get_path_name(),
+        frame_ranges[-1][1],
+        clip_in, clip_out,
+        [level])
 
-    vis_section.set_range(child_start_frame, child_end_frame + 1)
-    vis_section.set_visibility(unreal.LevelVisibility.VISIBLE)
-    vis_section.set_row_index(index)
-    vis_section.set_level_names(maps)
-
-    if child_start_frame > 1:
-        hid_section = visibility_track.add_section()
-        hid_section.set_range(1, child_start_frame)
-        hid_section.set_visibility(unreal.LevelVisibility.HIDDEN)
-        hid_section.set_row_index(index)
-        hid_section.set_level_names(maps)
-    if child_end_frame < parent_end_frame:
-        hid_section = visibility_track.add_section()
-        hid_section.set_range(child_end_frame + 1, parent_end_frame + 1)
-        hid_section.set_visibility(unreal.LevelVisibility.HIDDEN)
-        hid_section.set_row_index(index)
-        hid_section.set_level_names(maps)
+    return {"return": sequence.get_path_name()}
 
 
-def _get_transform(import_data, basis_data, transform_data):
+def set_sequences_range(params):
     """
+    Set range of all sections
+    Changing the range of the section is not enough. We need to change
+    the frame of all the keys in the section.
+
     Args:
-        import_data (unreal.FbxImportUI): import data
-        basis_data (list): basis data
-        transform_data (list): transform data
+        params (str): string containing a dictionary with parameters:
+            sequence (str): path to the sequence
+
     """
-    filename = import_data.get_first_filename()
-    path = Path(filename)
+    cam_seq_path, clip_in, clip_out, frame_start = get_params(
+        params, 'sequence', 'clip_in', 'clip_out', 'frame_start')
 
-    conversion = unreal.Matrix.IDENTITY.transform()
-    tuning = unreal.Matrix.IDENTITY.transform()
+    cam_seq = get_asset(cam_seq_path)
 
-    basis = unreal.Matrix(
-        basis_data[0],
-        basis_data[1],
-        basis_data[2],
-        basis_data[3]
-    ).transform()
-    transform = unreal.Matrix(
-        transform_data[0],
-        transform_data[1],
-        transform_data[2],
-        transform_data[3]
-    ).transform()
+    for possessable in cam_seq.get_possessables():
+        for tracks in possessable.get_tracks():
+            for section in tracks.get_sections():
+                section.set_range(
+                    clip_in,
+                    clip_out + 1)
+                for channel in section.get_all_channels():
+                    for key in channel.get_keys():
+                        old_time = key.get_time().get_editor_property(
+                            'frame_number')
+                        old_time_value = old_time.get_editor_property(
+                            'value')
+                        new_time = old_time_value + (clip_in - frame_start)
+                        key.set_time(unreal.FrameNumber(value=new_time))
 
-    # Check for the conversion settings. We cannot access
-    # the alembic conversion settings, so we assume that
-    # the maya ones have been applied.
-    if path.suffix == '.fbx':
-        loc = import_data.import_translation
-        rot = import_data.import_rotation.to_vector()
-        scale = import_data.import_uniform_scale
-        conversion = unreal.Transform(
-            location=[loc.x, loc.y, loc.z],
-            rotation=[rot.x, -rot.y, -rot.z],
-            scale=[scale, scale, scale]
-        )
-        tuning = unreal.Transform(
-            rotation=[0.0, 0.0, 0.0],
-            scale=[1.0, 1.0, 1.0]
-        )
-    elif path.suffix == '.abc':
-        # This is the standard conversion settings for
-        # alembic files from Maya.
-        conversion = unreal.Transform(
-            location=[0.0, 0.0, 0.0],
-            rotation=[90.0, 0.0, 0.0],
-            scale=[1.0, -1.0, 1.0]
-        )
-        tuning = unreal.Transform(
-            rotation=[0.0, 0.0, 0.0],
-            scale=[1.0, 1.0, 1.0]
-        )
 
-    new_transform = basis.inverse() * transform * basis
-    return tuning * conversion.inverse() * new_transform
+def _transform_from_basis(transform, basis):
+    """Transform a transform from a basis to a new basis."""
+    # Get the basis matrix
+    basis_matrix = unreal.Matrix(
+        basis[0],
+        basis[1],
+        basis[2],
+        basis[3]
+    )
+    transform_matrix = unreal.Matrix(
+        transform[0],
+        transform[1],
+        transform[2],
+        transform[3]
+    )
+
+    new_transform = (
+        basis_matrix.get_inverse() * transform_matrix * basis_matrix)
+
+    return new_transform.transform()
 
 
 def process_family(params):
@@ -722,32 +744,18 @@ def process_family(params):
     actors = []
     bindings = []
 
-    component_property = ''
-    mesh_property = ''
-
-    if class_name == 'SkeletalMesh':
-        component_property = 'skeletal_mesh_component'
-        mesh_property = 'skeletal_mesh'
-    elif class_name == 'StaticMesh':
-        component_property = 'static_mesh_component'
-        mesh_property = 'static_mesh'
-
     sequence = get_asset(sequence_path) if sequence_path else None
 
     for asset in assets:
         obj = get_asset(asset)
         if obj and obj.get_class().get_name() == class_name:
+            t = _transform_from_basis(transform, basis)
             actor = unreal.EditorLevelLibrary.spawn_actor_from_object(
-                obj, unreal.Vector(0.0, 0.0, 0.0))
+                obj, t.translation
+            )
             actor.set_actor_label(instance_name)
-
-            component = actor.get_editor_property(component_property)
-            mesh = component.get_editor_property(mesh_property)
-            import_data = mesh.get_editor_property('asset_import_data')
-
-            transform = _get_transform(import_data, basis, transform)
-
-            actor.set_actor_transform(transform, False, True)
+            actor.set_actor_rotation(t.rotation.rotator(), False)
+            actor.set_actor_scale3d(t.scale3d)
 
             if class_name == 'SkeletalMesh':
                 skm_comp = actor.get_editor_property('skeletal_mesh_component')
@@ -756,14 +764,12 @@ def process_family(params):
             actors.append(actor.get_path_name())
 
             if sequence:
-                binding = next(
-                    (
-                        p
-                        for p in sequence.get_possessables()
-                        if p.get_name() == actor.get_name()
-                    ),
-                    None,
-                )
+                binding = None
+                for p in sequence.get_possessables():
+                    if p.get_name() == actor.get_name():
+                        binding = p
+                        break
+
                 if not binding:
                     binding = sequence.add_possessable(actor)
 
