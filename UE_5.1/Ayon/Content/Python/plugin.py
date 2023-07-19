@@ -668,6 +668,176 @@ def generate_layout_sequence(params):
     return {"return": sequence.get_path_name()}
 
 
+def get_current_sequence_and_level_info():
+    from unreal import LevelSequenceEditorBlueprintLibrary as LevelSequenceLib
+
+    curr_level_sequence = LevelSequenceLib.get_current_level_sequence()
+    sequence_path = (
+        curr_level_sequence.get_path_name() if curr_level_sequence else None)
+    curr_time = LevelSequenceLib.get_current_time()
+    is_cam_lock = LevelSequenceLib.is_camera_cut_locked_to_viewport()
+
+    editor_subsystem = unreal.UnrealEditorSubsystem()
+    vp_loc, vp_rot = editor_subsystem.get_level_viewport_camera_info()
+
+    return {
+        "return": (
+            sequence_path,
+            curr_time,
+            is_cam_lock,
+            [vp_loc.x, vp_loc.y, vp_loc.z],
+            [vp_rot.roll, vp_rot.pitch, vp_rot.yaw])}
+
+
+def set_current_sequence_and_level_info(params):
+    sequence_path, curr_time, is_cam_lock, vp_loc, vp_rot = get_params(
+        params, 'sequence_path', 'curr_time', 'is_cam_lock', 'vp_loc',
+        'vp_rot')
+
+    from unreal import LevelSequenceEditorBlueprintLibrary as LevelSequenceLib
+
+    if sequence_path:
+        curr_level_sequence = get_asset(sequence_path)
+
+        LevelSequenceLib.open_level_sequence(curr_level_sequence)
+        LevelSequenceLib.set_current_time(curr_time)
+        LevelSequenceLib.set_lock_camera_cut_to_viewport(is_cam_lock)
+
+    editor_subsystem = unreal.UnrealEditorSubsystem()
+    editor_subsystem.set_level_viewport_camera_info(
+        unreal.Vector(vp_loc[0], vp_loc[1], vp_loc[2]),
+        unreal.Rotator(vp_rot[0], vp_rot[1], vp_rot[2]))
+
+
+def update_camera(params):
+    """
+    Args:
+        params (str): string containing a dictionary with parameters:
+            asset_dir (str): path to the asset directory
+            asset (str): name of the asset
+            root (str): root path of the asset
+    """
+    asset_dir, asset, root = get_params(params, 'asset_dir', 'asset', 'root')
+
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    unreal.EditorLevelLibrary.save_current_level()
+
+    _filter = unreal.ARFilter(
+        class_names=["LevelSequence"],
+        package_paths=[asset_dir],
+        recursive_paths=False)
+    sequences = ar.get_assets(_filter)
+    _filter = unreal.ARFilter(
+        class_names=["World"],
+        package_paths=[asset_dir],
+        recursive_paths=True)
+    maps = ar.get_assets(_filter)
+
+    # There should be only one map in the list
+    unreal.EditorLevelLibrary.load_level(maps[0].get_asset().get_path_name())
+
+    level_sequence = sequences[0].get_asset()
+
+    display_rate = level_sequence.get_display_rate()
+    playback_start = level_sequence.get_playback_start()
+    playback_end = level_sequence.get_playback_end()
+
+    sequence_name = f"{asset}_camera"
+
+    # Get the actors in the level sequence.
+    objs = unreal.SequencerTools.get_bound_objects(
+        unreal.EditorLevelLibrary.get_editor_world(),
+        level_sequence,
+        level_sequence.get_bindings(),
+        unreal.SequencerScriptingRange(
+            has_start_value=True,
+            has_end_value=True,
+            inclusive_start=level_sequence.get_playback_start(),
+            exclusive_end=level_sequence.get_playback_end()
+        )
+    )
+
+    # Delete actors from the map
+    for o in objs:
+        if o.bound_objects[0].get_class().get_name() == "CineCameraActor":
+            actor_path = o.bound_objects[0].get_path_name().split(":")[-1]
+            actor = unreal.EditorLevelLibrary.get_actor_reference(actor_path)
+            unreal.EditorLevelLibrary.destroy_actor(actor)
+
+    # Remove the Level Sequence from the parent.
+    # We need to traverse the hierarchy from the master sequence to find
+    # the level sequence.
+    namespace = asset_dir.replace(f"{root}/", "")
+    ms_asset = namespace.split('/')[0]
+    _filter = unreal.ARFilter(
+        class_names=["LevelSequence"],
+        package_paths=[f"{root}/{ms_asset}"],
+        recursive_paths=False)
+    sequences = ar.get_assets(_filter)
+    master_sequence = sequences[0].get_asset()
+
+    sequences = [master_sequence]
+
+    parent = None
+    sub_scene = None
+    for s in sequences:
+        tracks = s.get_master_tracks()
+        subscene_track = None
+        for t in tracks:
+            if t.get_class() == unreal.MovieSceneSubTrack.static_class():
+                subscene_track = t
+        if subscene_track:
+            sections = subscene_track.get_sections()
+            for ss in sections:
+                if ss.get_sequence().get_name() == sequence_name:
+                    parent = s
+                    sub_scene = ss
+                    break
+                sequences.append(ss.get_sequence())
+            for i, ss in enumerate(sections):
+                ss.set_row_index(i)
+        if parent:
+            break
+
+        assert parent, "Could not find the parent sequence"
+
+    unreal.EditorAssetLibrary.delete_asset(level_sequence.get_path_name())
+
+    settings = unreal.MovieSceneUserImportFBXSettings()
+    settings.set_editor_property('reduce_keys', False)
+
+    tools = unreal.AssetToolsHelpers().get_asset_tools()
+    new_sequence = tools.create_asset(
+        asset_name=sequence_name,
+        package_path=asset_dir,
+        asset_class=unreal.LevelSequence,
+        factory=unreal.LevelSequenceFactoryNew()
+    )
+
+    new_sequence.set_display_rate(display_rate)
+    new_sequence.set_playback_start(playback_start)
+    new_sequence.set_playback_end(playback_end)
+
+    sub_scene.set_sequence(new_sequence)
+
+    return {"return": new_sequence.get_path_name()}
+
+
+def get_and_load_master_level(params):
+    path = get_params(params, 'path')
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    _filter = unreal.ARFilter(
+        class_names=["World"],
+        package_paths=[path],
+        recursive_paths=False)
+    levels = ar.get_assets(_filter)
+    master_level = levels[0].get_asset().get_path_name()
+
+    unreal.EditorLevelLibrary.load_level(master_level)
+
+
 def set_sequences_range(params):
     """
     Set range of all sections
