@@ -957,6 +957,64 @@ def remove_camera(params):
         unreal.EditorAssetLibrary.delete_directory(path.parent.as_posix())
 
 
+def update_layout(params):
+    asset_dir, root, hierarchy, create_sequences = get_params(
+        params, 'asset_dir', 'root', 'hierarchy', 'create_sequences')
+
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    sequence = None
+    master_level = None
+
+    if create_sequences:
+        h_dir = f"{root}/{hierarchy[0]}"
+        h_asset = hierarchy[0]
+        master_level = f"{h_dir}/{h_asset}_map.{h_asset}_map"
+
+        _filter = unreal.ARFilter(
+            class_names=["LevelSequence"],
+            package_paths=[asset_dir],
+            recursive_paths=False)
+        sequences = ar.get_assets(_filter)
+        sequence = sequences[0].get_asset()
+
+    prev_level = None
+
+    if not master_level:
+        curr_level = unreal.LevelEditorSubsystem().get_current_level()
+        curr_level_path = curr_level.get_outer().get_path_name()
+        # If the level path does not start with "/Game/", the current
+        # level is a temporary, unsaved level.
+        if curr_level_path.startswith("/Game/"):
+            prev_level = curr_level_path
+
+    # Get layout level
+    _filter = unreal.ARFilter(
+        class_names=["World"],
+        package_paths=[asset_dir],
+        recursive_paths=False)
+    levels = ar.get_assets(_filter)
+
+    layout_level = levels[0].get_asset().get_path_name()
+
+    unreal.EditorLevelLibrary.save_all_dirty_levels()
+    unreal.EditorLevelLibrary.load_level(layout_level)
+
+    # Delete all the actors in the level
+    actors = unreal.EditorLevelLibrary.get_all_level_actors()
+    for actor in actors:
+        unreal.EditorLevelLibrary.destroy_actor(actor)
+
+    if create_sequences:
+        unreal.EditorLevelLibrary.save_current_level()
+
+    unreal.EditorAssetLibrary.delete_directory(f"{asset_dir}/animations/")
+
+    return {"return": (
+        sequence.get_path_name() if sequence else None,
+        master_level, prev_level)}
+
+
 def get_and_load_master_level(params):
     path = get_params(params, 'path')
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
