@@ -824,6 +824,139 @@ def update_camera(params):
     return {"return": new_sequence.get_path_name()}
 
 
+def remove_camera(params):
+    asset_dir, asset, root = get_params(params, 'asset_dir', 'asset', 'root')
+
+    path = Path(asset_dir)
+
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+    _filter = unreal.ARFilter(
+        class_names=["LevelSequence"],
+        package_paths=[asset_dir],
+        recursive_paths=False)
+    sequences = ar.get_assets(_filter)
+
+    if not sequences:
+        raise FileNotFoundError("Could not find sequence.")
+
+    world = ar.get_asset_by_object_path(
+        unreal.EditorLevelLibrary.get_editor_world().get_path_name())
+
+    _filter = unreal.ARFilter(
+        class_names=["World"],
+        package_paths=[asset_dir],
+        recursive_paths=True)
+    levels = ar.get_assets(_filter)
+
+    # There should be only one map in the list
+    if not levels:
+        raise FileNotFoundError("Could not find map.")
+
+    level = levels[0]
+
+    unreal.EditorLevelLibrary.save_all_dirty_levels()
+    unreal.EditorLevelLibrary.load_level(level.get_asset().get_path_name())
+
+    # Remove the camera from the level.
+    actors = unreal.EditorLevelLibrary.get_all_level_actors()
+
+    for a in actors:
+        if a.__class__ == unreal.CineCameraActor:
+            unreal.EditorLevelLibrary.destroy_actor(a)
+
+    unreal.EditorLevelLibrary.save_all_dirty_levels()
+    unreal.EditorLevelLibrary.load_level(world.get_asset().get_path_name())
+
+    # There should be only one sequence in the path.
+    sequence_name = sequences[0].asset_name
+
+    # Remove the Level Sequence from the parent.
+    # We need to traverse the hierarchy from the master sequence to find
+    # the level sequence.
+    namespace = asset_dir.replace(f"{root}/", "")
+    ms_asset = namespace.split('/')[0]
+    _filter = unreal.ARFilter(
+        class_names=["LevelSequence"],
+        package_paths=[f"{root}/{ms_asset}"],
+        recursive_paths=False)
+    sequences = ar.get_assets(_filter)
+    master_sequence = sequences[0].get_asset()
+    _filter = unreal.ARFilter(
+        class_names=["World"],
+        package_paths=[f"{root}/{ms_asset}"],
+        recursive_paths=False)
+    levels = ar.get_assets(_filter)
+    master_level = levels[0].get_full_name()
+
+    sequences = [master_sequence]
+
+    parent = None
+    for s in sequences:
+        tracks = s.get_master_tracks()
+        subscene_track = None
+        visibility_track = None
+        for t in tracks:
+            if t.get_class() == unreal.MovieSceneSubTrack.static_class():
+                subscene_track = t
+            if (t.get_class() ==
+                    unreal.MovieSceneLevelVisibilityTrack.static_class()):
+                visibility_track = t
+        if subscene_track:
+            sections = subscene_track.get_sections()
+            for ss in sections:
+                if ss.get_sequence().get_name() == sequence_name:
+                    parent = s
+                    subscene_track.remove_section(ss)
+                    break
+                sequences.append(ss.get_sequence())
+            # Update subscenes indexes.
+            for i, ss in enumerate(sections):
+                ss.set_row_index(i)
+
+        if visibility_track:
+            sections = visibility_track.get_sections()
+            for ss in sections:
+                if (unreal.Name(f"{asset}_map_camera")
+                        in ss.get_level_names()):
+                    visibility_track.remove_section(ss)
+            # Update visibility sections indexes.
+            i = -1
+            prev_name = []
+            for ss in sections:
+                if prev_name != ss.get_level_names():
+                    i += 1
+                ss.set_row_index(i)
+                prev_name = ss.get_level_names()
+        if parent:
+            break
+
+    assert parent, "Could not find the parent sequence"
+
+    # Create a temporary level to delete the layout level.
+    unreal.EditorLevelLibrary.save_all_dirty_levels()
+    unreal.EditorAssetLibrary.make_directory(f"{root}/tmp")
+    tmp_level = f"{root}/tmp/temp_map"
+    if not unreal.EditorAssetLibrary.does_asset_exist(f"{tmp_level}.temp_map"):
+        unreal.EditorLevelLibrary.new_level(tmp_level)
+    else:
+        unreal.EditorLevelLibrary.load_level(tmp_level)
+
+    # Delete the layout directory.
+    unreal.EditorAssetLibrary.delete_directory(asset_dir)
+
+    unreal.EditorLevelLibrary.load_level(master_level)
+    unreal.EditorAssetLibrary.delete_directory(f"{root}/tmp")
+
+    # Check if there isn't any more assets in the parent folder, and
+    # delete it if not.
+    asset_content = unreal.EditorAssetLibrary.list_assets(
+        path.parent.as_posix(), recursive=False, include_folder=True
+    )
+
+    if len(asset_content) == 0:
+        unreal.EditorAssetLibrary.delete_directory(path.parent.as_posix())
+
+
 def get_and_load_master_level(params):
     path = get_params(params, 'path')
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
@@ -1206,81 +1339,6 @@ def delete_all_bound_assets(params):
         actor_path = obj.bound_objects[0].get_path_name().split(":")[-1]
         actor = unreal.EditorLevelLibrary.get_actor_reference(actor_path)
         unreal.EditorLevelLibrary.destroy_actor(actor)
-
-
-def remove_camera(params):
-    """
-    Args:
-        params (str): string containing a dictionary with parameters:
-            root (str): path to the root folder
-            asset_dir (str): path to the asset folder
-    """
-    root, asset_dir = get_params(params, 'root', 'asset_dir')
-
-    parent_path = Path(asset_dir).parent.as_posix()
-
-    old_sequence = _get_first_asset_of_class("LevelSequence", asset_dir, False)
-    level = _get_first_asset_of_class("World", parent_path, True)
-
-    unreal.EditorLevelLibrary.save_all_dirty_levels()
-    unreal.EditorLevelLibrary.load_level(level)
-
-    # There should be only one sequence in the path.
-    level_sequence = get_asset(old_sequence)
-    sequence_name = level_sequence.get_fname()
-
-    delete_all_bound_assets(level_sequence.get_path_name())
-
-    # Remove the Level Sequence from the parent.
-    # We need to traverse the hierarchy from the master sequence to find
-    # the level sequence.
-    namespace = asset_dir.replace(f"{root}/", "")
-    ms_asset = namespace.split('/')[0]
-    master_sequence = get_asset(_get_first_asset_of_class(
-        "LevelSequence", f"{root}/{ms_asset}", False))
-
-    sequences = [master_sequence]
-
-    parent_sequence = None
-    for sequence in sequences:
-        tracks = sequence.get_master_tracks()
-        # Get the subscene track.
-        if subscene_track := next(
-            (
-                track
-                for track in tracks
-                if track.get_class().get_name() == "MovieSceneSubTrack"
-            ),
-            None,
-        ):
-            sections = subscene_track.get_sections()
-            for section in sections:
-                if section.get_sequence().get_name() == sequence_name:
-                    parent_sequence = sequence
-                    subscene_track.remove_section(section)
-                    break
-                sequences.append(section.get_sequence())
-            # Update subscenes indexes.
-            for i, section in enumerate(sections):
-                section.set_row_index(i)
-
-        if parent_sequence:
-            break
-
-    assert parent_sequence, "Could not find the parent sequence"
-
-    unreal.EditorAssetLibrary.delete_asset(level_sequence.get_path_name())
-
-    # Check if there isn't any more assets in the parent folder, and
-    # delete it if not.
-    asset_content = unreal.EditorAssetLibrary.list_assets(
-        parent_path, recursive=False, include_folder=True
-    )
-
-    if len(asset_content) == 0:
-        unreal.EditorAssetLibrary.delete_directory(parent_path)
-
-    return parent_sequence.get_path_name()
 
 
 def _remove_subsequences(master_sequence, asset):
