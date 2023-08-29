@@ -1640,7 +1640,7 @@ def spawn_existing_actors(params):
     all_containers = ls()
 
     for container in all_containers:
-        representation = container.get('representation')
+        representation = container.get('representation_id')
 
         if representation != str(repr_data.get('_id')):
             continue
