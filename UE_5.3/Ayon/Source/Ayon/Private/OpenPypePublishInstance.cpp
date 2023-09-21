@@ -51,50 +51,59 @@ UOpenPypePublishInstance::UOpenPypePublishInstance(const FObjectInitializer& Obj
 
 void UOpenPypePublishInstance::OnAssetCreated(const FAssetData& InAssetData)
 {
-	TArray<FString> split;
-
-	UObject* Asset = InAssetData.GetAsset();
-
-	if (!IsValid(Asset))
+	if (InAssetData.GetClass() == UOpenPypePublishInstance::StaticClass())
 	{
-		UE_LOG(LogAssetData, Warning, TEXT("Asset \"%s\" is not valid! Skipping the addition."),
-		       *InAssetData.GetSoftObjectPath().ToString());
-		return;
-	}
+		TArray<FString> split;
 
-	const bool result = IsUnderSameDir(Asset) && Cast<UOpenPypePublishInstance>(Asset) == nullptr;
+		UObject* Asset = InAssetData.GetAsset();
 
-	if (result)
-	{
-		if (AssetDataInternal.Emplace(Asset).IsValidId())
+		if (!IsValid(Asset))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Added an Asset to PublishInstance - Publish Instance: %s, Asset %s"),
-			       *this->GetName(), *Asset->GetName());
+			UE_LOG(LogAssetData, Warning, TEXT("Asset \"%s\" is not valid! Skipping the addition."),
+				*InAssetData.GetSoftObjectPath().ToString());
+			return;
+		}
+
+		const bool result = IsUnderSameDir(Asset) && Cast<UOpenPypePublishInstance>(Asset) == nullptr;
+
+		if (result)
+		{
+			if (AssetDataInternal.Emplace(Asset).IsValidId())
+			{
+				UE_LOG(LogTemp, Log, TEXT("Added an Asset to PublishInstance - Publish Instance: %s, Asset %s"),
+					*this->GetName(), *Asset->GetName());
+			}
 		}
 	}
 }
 
 void UOpenPypePublishInstance::OnAssetRemoved(const FAssetData& InAssetData)
 {
-	if (Cast<UOpenPypePublishInstance>(InAssetData.GetAsset()) == nullptr)
+	if (InAssetData.GetClass() == UOpenPypePublishInstance::StaticClass())
 	{
-		if (AssetDataInternal.Contains(nullptr))
+		if (Cast<UOpenPypePublishInstance>(InAssetData.GetAsset()) == nullptr)
 		{
-			AssetDataInternal.Remove(nullptr);
-			REMOVE_INVALID_ENTRIES(AssetDataInternal)
-		}
-		else
-		{
-			AssetDataExternal.Remove(nullptr);
-			REMOVE_INVALID_ENTRIES(AssetDataExternal)
+			if (AssetDataInternal.Contains(nullptr))
+			{
+				AssetDataInternal.Remove(nullptr);
+				REMOVE_INVALID_ENTRIES(AssetDataInternal)
+			}
+			else
+			{
+				AssetDataExternal.Remove(nullptr);
+				REMOVE_INVALID_ENTRIES(AssetDataExternal)
+			}
 		}
 	}
 }
 
 void UOpenPypePublishInstance::OnAssetUpdated(const FAssetData& InAssetData)
 {
-	REMOVE_INVALID_ENTRIES(AssetDataInternal);
-	REMOVE_INVALID_ENTRIES(AssetDataExternal);
+	if (InAssetData.GetClass() == UOpenPypePublishInstance::StaticClass())
+	{
+		REMOVE_INVALID_ENTRIES(AssetDataInternal);
+		REMOVE_INVALID_ENTRIES(AssetDataExternal);
+	}
 }
 
 bool UOpenPypePublishInstance::IsUnderSameDir(const UObject* InAsset) const

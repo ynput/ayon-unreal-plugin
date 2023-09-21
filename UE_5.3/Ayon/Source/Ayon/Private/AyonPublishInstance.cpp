@@ -51,50 +51,59 @@ UAyonPublishInstance::UAyonPublishInstance(const FObjectInitializer& ObjectIniti
 
 void UAyonPublishInstance::OnAssetCreated(const FAssetData& InAssetData)
 {
-	TArray<FString> split;
-
-	UObject* Asset = InAssetData.GetAsset();
-
-	if (!IsValid(Asset))
+	if (InAssetData.GetClass() == UAyonPublishInstance::StaticClass())
 	{
-		UE_LOG(LogAssetData, Warning, TEXT("Asset \"%s\" is not valid! Skipping the addition."),
-		       *InAssetData.GetSoftObjectPath().ToString());
-		return;
-	}
+		TArray<FString> split;
 
-	const bool result = IsUnderSameDir(Asset) && Cast<UAyonPublishInstance>(Asset) == nullptr;
+		UObject* Asset = InAssetData.GetAsset();
 
-	if (result)
-	{
-		if (AssetDataInternal.Emplace(Asset).IsValidId())
+		if (!IsValid(Asset))
 		{
-			UE_LOG(LogTemp, Log, TEXT("Added an Asset to PublishInstance - Publish Instance: %s, Asset %s"),
-			       *this->GetName(), *Asset->GetName());
+			UE_LOG(LogAssetData, Warning, TEXT("Asset \"%s\" is not valid! Skipping the addition."),
+				*InAssetData.GetSoftObjectPath().ToString());
+			return;
+		}
+
+		const bool result = IsUnderSameDir(Asset) && Cast<UAyonPublishInstance>(Asset) == nullptr;
+
+		if (result)
+		{
+			if (AssetDataInternal.Emplace(Asset).IsValidId())
+			{
+				UE_LOG(LogTemp, Log, TEXT("Added an Asset to PublishInstance - Publish Instance: %s, Asset %s"),
+					*this->GetName(), *Asset->GetName());
+			}
 		}
 	}
 }
 
 void UAyonPublishInstance::OnAssetRemoved(const FAssetData& InAssetData)
 {
-	if (Cast<UAyonPublishInstance>(InAssetData.GetAsset()) == nullptr)
+	if (InAssetData.GetClass() == UAyonPublishInstance::StaticClass())
 	{
-		if (AssetDataInternal.Contains(nullptr))
+		if (Cast<UAyonPublishInstance>(InAssetData.GetAsset()) == nullptr)
 		{
-			AssetDataInternal.Remove(nullptr);
-			REMOVE_INVALID_ENTRIES(AssetDataInternal)
-		}
-		else
-		{
-			AssetDataExternal.Remove(nullptr);
-			REMOVE_INVALID_ENTRIES(AssetDataExternal)
+			if (AssetDataInternal.Contains(nullptr))
+			{
+				AssetDataInternal.Remove(nullptr);
+				REMOVE_INVALID_ENTRIES(AssetDataInternal)
+			}
+			else
+			{
+				AssetDataExternal.Remove(nullptr);
+				REMOVE_INVALID_ENTRIES(AssetDataExternal)
+			}
 		}
 	}
 }
 
 void UAyonPublishInstance::OnAssetUpdated(const FAssetData& InAssetData)
 {
-	REMOVE_INVALID_ENTRIES(AssetDataInternal);
-	REMOVE_INVALID_ENTRIES(AssetDataExternal);
+	if (InAssetData.GetClass() == UAyonPublishInstance::StaticClass())
+	{
+		REMOVE_INVALID_ENTRIES(AssetDataInternal);
+		REMOVE_INVALID_ENTRIES(AssetDataExternal);
+	}
 }
 
 bool UAyonPublishInstance::IsUnderSameDir(const UObject* InAsset) const

@@ -20,93 +20,102 @@ UAyonAssetContainer::UAyonAssetContainer(const FObjectInitializer& ObjectInitial
 
 void UAyonAssetContainer::OnAssetAdded(const FAssetData& AssetData)
 {
-	TArray<FString> split;
-
-	// get directory of current container
-	FString selfFullPath = UAyonAssetContainer::GetPathName();
-	FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
-
-	// get asset path and class
-	FString assetPath = AssetData.GetFullName();
-	FString assetFName = AssetData.GetObjectPathString();
-	UE_LOG(LogTemp, Log, TEXT("asset name %s"), *assetFName);
-	// split path
-	assetPath.ParseIntoArray(split, TEXT(" "), true);
-
-	FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
-
-	// take interest only in paths starting with path of current container
-	if (assetDir.StartsWith(*selfDir))
+	if (AssetData.GetClass() == UAyonAssetContainer::StaticClass())
 	{
-		// exclude self
-		if (assetFName != "AssetContainer")
+		TArray<FString> split;
+
+		// get directory of current container
+		FString selfFullPath = UAyonAssetContainer::GetPathName();
+		FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
+
+		// get asset path and class
+		FString assetPath = AssetData.GetFullName();
+		FString assetFName = AssetData.GetObjectPathString();
+		UE_LOG(LogTemp, Log, TEXT("asset name %s"), *assetFName);
+		// split path
+		assetPath.ParseIntoArray(split, TEXT(" "), true);
+
+		FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
+
+		// take interest only in paths starting with path of current container
+		if (assetDir.StartsWith(*selfDir))
 		{
-			assets.Add(assetPath);
-			assetsData.Add(AssetData);
-			UE_LOG(LogTemp, Log, TEXT("%s: asset added to %s"), *selfFullPath, *selfDir);
+			// exclude self
+			if (assetFName != "AssetContainer")
+			{
+				assets.Add(assetPath);
+				assetsData.Add(AssetData);
+				UE_LOG(LogTemp, Log, TEXT("%s: asset added to %s"), *selfFullPath, *selfDir);
+			}
 		}
 	}
 }
 
 void UAyonAssetContainer::OnAssetRemoved(const FAssetData& AssetData)
 {
-	TArray<FString> split;
-
-	// get directory of current container
-	FString selfFullPath = UAyonAssetContainer::GetPathName();
-	FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
-
-	// get asset path and class
-	FString assetPath = AssetData.GetFullName();
-	FString assetFName = AssetData.GetObjectPathString();
-
-	// split path
-	assetPath.ParseIntoArray(split, TEXT(" "), true);
-
-	FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
-
-	// take interest only in paths starting with path of current container
-	FString path = UAyonAssetContainer::GetPathName();
-	FString lpp = FPackageName::GetLongPackagePath(*path);
-
-	if (assetDir.StartsWith(*selfDir))
+	if (AssetData.GetClass() == UAyonAssetContainer::StaticClass())
 	{
-		// exclude self
-		if (assetFName != "AssetContainer")
+		TArray<FString> split;
+
+		// get directory of current container
+		FString selfFullPath = UAyonAssetContainer::GetPathName();
+		FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
+
+		// get asset path and class
+		FString assetPath = AssetData.GetFullName();
+		FString assetFName = AssetData.GetObjectPathString();
+
+		// split path
+		assetPath.ParseIntoArray(split, TEXT(" "), true);
+
+		FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
+
+		// take interest only in paths starting with path of current container
+		FString path = UAyonAssetContainer::GetPathName();
+		FString lpp = FPackageName::GetLongPackagePath(*path);
+
+		if (assetDir.StartsWith(*selfDir))
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("%s: asset removed"), *lpp);
-			assets.Remove(assetPath);
-			assetsData.Remove(AssetData);
+			// exclude self
+			if (assetFName != "AssetContainer")
+			{
+				// UE_LOG(LogTemp, Warning, TEXT("%s: asset removed"), *lpp);
+				assets.Remove(assetPath);
+				assetsData.Remove(AssetData);
+			}
 		}
 	}
 }
 
 void UAyonAssetContainer::OnAssetRenamed(const FAssetData& AssetData, const FString& str)
 {
-	TArray<FString> split;
-
-	// get directory of current container
-	FString selfFullPath = UAyonAssetContainer::GetPathName();
-	FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
-
-	// get asset path and class
-	FString assetPath = AssetData.GetFullName();
-	FString assetFName = AssetData.GetObjectPathString();
-
-	// split path
-	assetPath.ParseIntoArray(split, TEXT(" "), true);
-
-	FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
-	if (assetDir.StartsWith(*selfDir))
+	if (AssetData.GetClass() == UAyonAssetContainer::StaticClass())
 	{
-		// exclude self
-		if (assetFName != "AssetContainer")
-		{
+		TArray<FString> split;
 
-			assets.Remove(str);
-			assets.Add(assetPath);
-			assetsData.Remove(AssetData);
-			// UE_LOG(LogTemp, Warning, TEXT("%s: asset renamed %s"), *lpp, *str);
+		// get directory of current container
+		FString selfFullPath = UAyonAssetContainer::GetPathName();
+		FString selfDir = FPackageName::GetLongPackagePath(*selfFullPath);
+
+		// get asset path and class
+		FString assetPath = AssetData.GetFullName();
+		FString assetFName = AssetData.GetObjectPathString();
+
+		// split path
+		assetPath.ParseIntoArray(split, TEXT(" "), true);
+
+		FString assetDir = FPackageName::GetLongPackagePath(*split[1]);
+		if (assetDir.StartsWith(*selfDir))
+		{
+			// exclude self
+			if (assetFName != "AssetContainer")
+			{
+
+				assets.Remove(str);
+				assets.Add(assetPath);
+				assetsData.Remove(AssetData);
+				// UE_LOG(LogTemp, Warning, TEXT("%s: asset renamed %s"), *lpp, *str);
+			}
 		}
 	}
 }
