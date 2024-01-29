@@ -3,7 +3,7 @@ AYON Unreal Integration Plugin
 
 This repository holds the code for AYON Unreal integration plugin for various UE versions.
 
-Documentation of how to use AYON integration inside Unreal is [here](https://ayon.ynput.io/docs/artist_hosts_unreal).
+Documentation of how to use AYON integration inside Unreal is [here](https://ayon.ynput.io/docs/addon_unreal_artist).
 
 This repository should be used as git submodule in [AYON Desktop / OpenPype](https://github.com/ynput/OpenPype)
 sources under `/openpype/hosts/unreal/integration`. In the future, Unreal
