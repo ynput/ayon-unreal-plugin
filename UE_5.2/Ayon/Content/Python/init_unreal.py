@@ -3,8 +3,8 @@ import unreal
 
 ayon_detected = True
 try:
-    from openpype.pipeline import install_host
-    from openpype.hosts.unreal.api import UnrealHost
+    from ayon_core.pipeline import install_host
+    from ayon_core.hosts.unreal.api import UnrealHost
 
     ayon_host = UnrealHost()
 except ImportError as exc:
