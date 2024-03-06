@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 // Deprecation warning: this is left here just for backwards compatibility
 // and will be removed in next versions of Ayon.
 #pragma once
@@ -7,9 +7,7 @@
 #include "Factories/Factory.h"
 #include "AyonPublishInstanceFactory.generated.h"
 
-/**
- *
- */
+
 UCLASS()
 class AYON_API UAyonPublishInstanceFactory : public UFactory
 {

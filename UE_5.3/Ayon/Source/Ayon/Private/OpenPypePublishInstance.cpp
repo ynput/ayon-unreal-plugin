@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 // Deprecation warning: this is left here just for backwards compatibility
 // and will be removed in next versions of Ayon.
 #pragma once
@@ -12,7 +12,7 @@
 #include "Widgets/Notifications/SNotificationList.h"
 
 
-//Moves all the invalid pointers to the end to prepare them for the shrinking
+// Moves all the invalid pointers to the end to prepare them for the shrinking
 #define REMOVE_INVALID_ENTRIES(VAR) VAR.CompactStable(); \
 									VAR.Shrink();
 
