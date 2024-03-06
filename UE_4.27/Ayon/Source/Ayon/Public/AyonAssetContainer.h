@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -7,9 +7,7 @@
 #include "AssetData.h"
 #include "AyonAssetContainer.generated.h"
 
-/**
- * 
- */
+
 UCLASS(Blueprintable)
 class AYON_API UAyonAssetContainer : public UAssetUserData
 {

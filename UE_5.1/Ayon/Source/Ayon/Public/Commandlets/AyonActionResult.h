@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 #pragma once
 
 #include "CoreMinimal.h"
@@ -13,10 +13,10 @@
 		return ActionResult.GetStatus();
 
 /**
-* @brief This enum values are humanly readable mapping of error codes.
-* Here should be all error codes to be possible find what went wrong.
-* TODO: In the future should exists an web document where is mapped error code & what problem occured & how to repair it...
-*/
+ * @brief This enum values are humanly readable mapping of error codes.
+ * Here should be all error codes to be possible find what went wrong.
+ * TODO: In the future should exists an web document where is mapped error code & what problem occured & how to repair it...
+ */
 UENUM()
 namespace EAyon_ActionResult
 {

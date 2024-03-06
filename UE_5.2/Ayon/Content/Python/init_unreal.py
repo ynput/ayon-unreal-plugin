@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Ynput s.r.o.
+# Copyright (c) 2024 Ynput s.r.o.
 import unreal
 
 ayon_detected = True

@@ -47,9 +47,9 @@ After the UBT path specify for which platform it will be compiled. in the `-Proj
 `BuildPlugin_[Ver].bat` runs the building process in the background. If you want to show the progress inside the command prompt, use the `BuildPlugin_[Ver]_Window.bat` file.
 
 Related links
---------------------
+-------------
 
-- **AYON Desktop** / **Openpype** repository: [https://github.com/ynput/OpenPype](https://github.com/ynput/OpenPype)
+- **AYON Core Addon** repository: [https://github.com/ynput/ayon-core](https://github.com/ynput/ayon-core)
 - **Unreal Engine**: [https://www.unrealengine.com/](https://www.unrealengine.com/)
 - **AYON / OpenPype** help: [https://ayon.ynput.io/](https://ayon.ynput.io/)
 - **AYON Docker** repository: [https://github.com/ynput/ayon-docker](https://github.com/ynput/ayon-docker)
