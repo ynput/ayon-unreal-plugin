@@ -222,28 +222,21 @@ def create_unique_asset_name(params):
     Args:
         params (str): string containing a dictionary with parameters:
             root (str): root path of the asset
-            asset (str): name of the asset
+            folder_name (str): name of the asset
             name (str): name of the subset
-            version (dict): version of the subset
+            version (int): version of the subset
             suffix (str): suffix of the asset
     """
-    root, asset, name, version, suffix = get_params(
-        params, 'root', 'asset', 'name', 'version', 'suffix')
+    root, folder_name, name, version, suffix = get_params(
+        params, 'root', 'folder_name', 'name', 'version', 'suffix')
 
     if not suffix:
         suffix = ""
 
-    # Check if version is hero version and use different name
-    if not version:
-        name_version = f"{name}"
-    elif not version.get("name") and version.get('type') == "hero_version":
-        name_version = f"{name}_hero"
-    else:
-        name_version = f"{name}_v{version.get('name'):03d}"
-
     tools = unreal.AssetToolsHelpers().get_asset_tools()
+    subset = f"{name}_v{version:03d}" if version else name
     return {"return": tools.create_unique_asset_name(
-        f"{root}/{asset}/{name_version}", suffix)}
+        f"{root}/{folder_name}/{subset}", suffix)}
 
 
 def get_current_level():
@@ -604,14 +597,14 @@ def generate_camera_sequence(params):
     Args:
         params (str): string containing a dictionary with parameters:
     """
-    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+    (folder_name, asset_dir, sequences, frame_ranges, level, fps, clip_in,
      clip_out) = get_params(
-        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
-        'fps', 'clip_in', 'clip_out')
+        params, 'folder_name', 'asset_dir', 'sequences', 'frame_ranges',
+        'level', 'fps', 'clip_in', 'clip_out')
 
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     cam_seq = tools.create_asset(
-        asset_name=f"{asset}_camera",
+        asset_name=f"{folder_name}_camera",
         package_path=asset_dir,
         asset_class=unreal.LevelSequence,
         factory=unreal.LevelSequenceFactoryNew()
@@ -642,14 +635,14 @@ def generate_layout_sequence(params):
     Args:
         params (str): string containing a dictionary with parameters:
     """
-    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+    (folder_name, asset_dir, sequences, frame_ranges, level, fps, clip_in,
      clip_out) = get_params(
-        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
-        'fps', 'clip_in', 'clip_out')
+        params, 'folder_name', 'asset_dir', 'sequences', 'frame_ranges',
+        'level', 'fps', 'clip_in', 'clip_out')
 
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     sequence = tools.create_asset(
-        asset_name=f"{asset}",
+        asset_name=f"{folder_name}",
         package_path=asset_dir,
         asset_class=unreal.LevelSequence,
         factory=unreal.LevelSequenceFactoryNew()
@@ -1358,8 +1351,7 @@ def add_animation_to_sequencer(params):
             # If it does, it means that the animation is
             # already in the sequencer.
             anim_path = str(Path(
-                curr_anim.get_path_name()).parent
-                            ).replace('\\', '/')
+                curr_anim.get_path_name()).parent).replace('\\', '/')
 
             ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
@@ -1625,7 +1617,7 @@ def match_actor(params):
         # Set the transform for the actor.
         basis_data = lasset.get('basis')
         transform_data = lasset.get('transform_matrix')
-        transform = _get_transform(import_data, basis_data, transform_data)
+        transform = _transform_from_basis(basis_data, transform_data)
 
         actor.set_actor_transform(transform, False, True)
 
@@ -1640,13 +1632,10 @@ def _spawn_actor(obj, lasset):
     )
 
     actor.set_actor_label(lasset.get('instance_name'))
-    smc = actor.get_editor_property('static_mesh_component')
-    mesh = smc.get_editor_property('static_mesh')
-    import_data = mesh.get_editor_property('asset_import_data')
 
     basis_data = lasset.get('basis')
     transform_data = lasset.get('transform_matrix')
-    transform = _get_transform(import_data, basis_data, transform_data)
+    transform = _transform_from_basis(basis_data, transform_data)
 
     actor.set_actor_transform(transform, False, True)
 
@@ -1660,16 +1649,16 @@ def spawn_existing_actors(params):
             repr_data (dict): dictionary containing the representation
             lasset (dict): dictionary containing the layout asset
     """
-    repr_data, lasset = get_params(params, 'repr_data', 'lasset')
+    repre_entity, lasset = get_params(params, 'repre_entity', 'lasset')
 
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
     all_containers = ls()
 
     for container in all_containers:
-        representation = container.get('representation_id')
+        representation = container.get('representation')
 
-        if representation != str(repr_data.get('_id')):
+        if representation != str(repre_entity.get('_id')):
             continue
 
         asset_dir = container.get('namespace')
