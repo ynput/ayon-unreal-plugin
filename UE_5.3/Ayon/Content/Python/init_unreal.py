@@ -51,6 +51,7 @@ from plugin import (
     remove_camera,
     update_layout,
     remove_layout,
+    delete_assets_in_dir_but_container,
     get_and_load_master_level,
     set_sequences_range,
     process_family,
@@ -66,6 +67,8 @@ from plugin import (
     spawn_existing_actors,
     spawn_actors,
     remove_unmatched_actors,
+    update_assets,
+    delete_unused_assets,
 )
 
 __all__ = [
@@ -114,6 +117,7 @@ __all__ = [
     "remove_camera",
     "update_layout",
     "remove_layout",
+    "delete_assets_in_dir_but_container",
     "get_and_load_master_level",
     "set_sequences_range",
     "process_family",
@@ -129,4 +133,6 @@ __all__ = [
     "spawn_existing_actors",
     "spawn_actors",
     "remove_unmatched_actors",
+    "update_assets",
+    "delete_unused_assets",
 ]

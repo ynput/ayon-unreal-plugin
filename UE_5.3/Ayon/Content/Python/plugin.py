@@ -222,13 +222,13 @@ def create_unique_asset_name(params):
     Args:
         params (str): string containing a dictionary with parameters:
             root (str): root path of the asset
-            asset (str): name of the asset
+            folder_name (str): name of the asset
             name (str): name of the subset
             version (int): version of the subset
             suffix (str): suffix of the asset
     """
-    root, asset, name, version, suffix = get_params(
-        params, 'root', 'asset', 'name', 'version', 'suffix')
+    root, folder_name, name, version, suffix = get_params(
+        params, 'root', 'folder_name', 'name', 'version', 'suffix')
 
     if not suffix:
         suffix = ""
@@ -236,7 +236,7 @@ def create_unique_asset_name(params):
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     subset = f"{name}_v{version:03d}" if version else name
     return {"return": tools.create_unique_asset_name(
-        f"{root}/{asset}/{subset}", suffix)}
+        f"{root}/{folder_name}/{subset}", suffix)}
 
 
 def get_current_level():
@@ -597,14 +597,14 @@ def generate_camera_sequence(params):
     Args:
         params (str): string containing a dictionary with parameters:
     """
-    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+    (folder_name, asset_dir, sequences, frame_ranges, level, fps, clip_in,
      clip_out) = get_params(
-        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
-        'fps', 'clip_in', 'clip_out')
+        params, 'folder_name', 'asset_dir', 'sequences', 'frame_ranges',
+        'level', 'fps', 'clip_in', 'clip_out')
 
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     cam_seq = tools.create_asset(
-        asset_name=f"{asset}_camera",
+        asset_name=f"{folder_name}_camera",
         package_path=asset_dir,
         asset_class=unreal.LevelSequence,
         factory=unreal.LevelSequenceFactoryNew()
@@ -635,14 +635,14 @@ def generate_layout_sequence(params):
     Args:
         params (str): string containing a dictionary with parameters:
     """
-    (asset, asset_dir, sequences, frame_ranges, level, fps, clip_in,
+    (folder_name, asset_dir, sequences, frame_ranges, level, fps, clip_in,
      clip_out) = get_params(
-        params, 'asset', 'asset_dir', 'sequences', 'frame_ranges', 'level',
-        'fps', 'clip_in', 'clip_out')
+        params, 'folder_name', 'asset_dir', 'sequences', 'frame_ranges',
+        'level', 'fps', 'clip_in', 'clip_out')
 
     tools = unreal.AssetToolsHelpers().get_asset_tools()
     sequence = tools.create_asset(
-        asset_name=f"{asset}",
+        asset_name=f"{folder_name}",
         package_path=asset_dir,
         asset_class=unreal.LevelSequence,
         factory=unreal.LevelSequenceFactoryNew()
@@ -1099,6 +1099,26 @@ def remove_layout(params):
         unreal.EditorAssetLibrary.delete_directory(path.parent.as_posix())
 
 
+def delete_assets_in_dir_but_container(params):
+    """
+    Args:
+        params (str): string containing a dictionary with parameters:
+            asset_dir (str): path to the asset directory
+    """
+    asset_dir = get_params(params, 'asset_dir')
+
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    asset_content = unreal.EditorAssetLibrary.list_assets(
+        asset_dir, recursive=False, include_folder=True
+    )
+
+    for asset in asset_content:
+        obj = ar.get_asset_by_object_path(asset).get_asset()
+        if obj.get_class().get_name() != "AyonAssetContainer":
+            unreal.EditorAssetLibrary.delete_asset(asset)
+
+
 def get_and_load_master_level(params):
     path = get_params(params, 'path')
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
@@ -1331,8 +1351,7 @@ def add_animation_to_sequencer(params):
             # If it does, it means that the animation is
             # already in the sequencer.
             anim_path = str(Path(
-                curr_anim.get_path_name()).parent
-                            ).replace('\\', '/')
+                curr_anim.get_path_name()).parent).replace('\\', '/')
 
             ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
@@ -1598,7 +1617,7 @@ def match_actor(params):
         # Set the transform for the actor.
         basis_data = lasset.get('basis')
         transform_data = lasset.get('transform_matrix')
-        transform = _get_transform(import_data, basis_data, transform_data)
+        transform = _transform_from_basis(basis_data, transform_data)
 
         actor.set_actor_transform(transform, False, True)
 
@@ -1613,13 +1632,10 @@ def _spawn_actor(obj, lasset):
     )
 
     actor.set_actor_label(lasset.get('instance_name'))
-    smc = actor.get_editor_property('static_mesh_component')
-    mesh = smc.get_editor_property('static_mesh')
-    import_data = mesh.get_editor_property('asset_import_data')
 
     basis_data = lasset.get('basis')
     transform_data = lasset.get('transform_matrix')
-    transform = _get_transform(import_data, basis_data, transform_data)
+    transform = _transform_from_basis(basis_data, transform_data)
 
     actor.set_actor_transform(transform, False, True)
 
@@ -1633,16 +1649,16 @@ def spawn_existing_actors(params):
             repr_data (dict): dictionary containing the representation
             lasset (dict): dictionary containing the layout asset
     """
-    repr_data, lasset = get_params(params, 'repr_data', 'lasset')
+    repre_entity, lasset = get_params(params, 'repre_entity', 'lasset')
 
     ar = unreal.AssetRegistryHelpers.get_asset_registry()
 
     all_containers = ls()
 
     for container in all_containers:
-        representation = container.get('representation_id')
+        representation = container.get('representation')
 
-        if representation != str(repr_data.get('_id')):
+        if representation != str(repre_entity.get('_id')):
             continue
 
         asset_dir = container.get('namespace')
@@ -1702,3 +1718,224 @@ def remove_unmatched_actors(params):
         if actor not in actors_matched:
             unreal.log_warning(f"Actor {actor.get_name()} not matched.")
             unreal.EditorLevelLibrary.destroy_actor(actor)
+
+
+def _get_comps_and_assets(
+    component_class, asset_class, old_assets, new_assets, selected
+):
+    eas = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
+
+    components = []
+    if selected:
+        sel_actors = eas.get_selected_level_actors()
+        for actor in sel_actors:
+            comps = actor.get_components_by_class(component_class)
+            components.extend(comps)
+    else:
+        comps = eas.get_all_level_actors_components()
+        components = [
+            c for c in comps if isinstance(c, component_class)
+        ]
+
+    # Get all the static meshes among the old assets in a dictionary with
+    # the name as key
+    selected_old_assets = {}
+    for a in old_assets:
+        asset = unreal.EditorAssetLibrary.load_asset(a)
+        if isinstance(asset, asset_class):
+            selected_old_assets[asset.get_name()] = asset
+
+    # Get all the static meshes among the new assets in a dictionary with
+    # the name as key
+    selected_new_assets = {}
+    for a in new_assets:
+        asset = unreal.EditorAssetLibrary.load_asset(a)
+        if isinstance(asset, asset_class):
+            selected_new_assets[asset.get_name()] = asset
+
+    return components, selected_old_assets, selected_new_assets
+
+
+def _replace_static_mesh_actors(old_assets, new_assets, selected):
+    smes = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+
+    static_mesh_comps, old_meshes, new_meshes = _get_comps_and_assets(
+        unreal.StaticMeshComponent,
+        unreal.StaticMesh,
+        old_assets,
+        new_assets,
+        selected
+    )
+
+    for old_name, old_mesh in old_meshes.items():
+        new_mesh = new_meshes.get(old_name)
+
+        if not new_mesh:
+            continue
+
+        smes.replace_mesh_components_meshes(
+            static_mesh_comps, old_mesh, new_mesh)
+
+
+def _replace_skeletal_mesh_actors(old_assets, new_assets, selected):
+    skeletal_mesh_comps, old_meshes, new_meshes = _get_comps_and_assets(
+        unreal.SkeletalMeshComponent,
+        unreal.SkeletalMesh,
+        old_assets,
+        new_assets,
+        selected
+    )
+
+    for old_name, old_mesh in old_meshes.items():
+        new_mesh = new_meshes.get(old_name)
+
+        if not new_mesh:
+            continue
+
+        for comp in skeletal_mesh_comps:
+            if comp.get_skeletal_mesh_asset() == old_mesh:
+                comp.set_skeletal_mesh_asset(new_mesh)
+
+
+def _replace_geometry_cache_actors(old_assets, new_assets, selected):
+    geometry_cache_comps, old_caches, new_caches = _get_comps_and_assets(
+        unreal.GeometryCacheComponent,
+        unreal.GeometryCache,
+        old_assets,
+        new_assets,
+        selected
+    )
+
+    for old_name, old_mesh in old_caches.items():
+        new_mesh = new_caches.get(old_name)
+
+        if not new_mesh:
+            continue
+
+        for comp in geometry_cache_comps:
+            if comp.get_editor_property("geometry_cache") == old_mesh:
+                comp.set_geometry_cache(new_mesh)
+
+
+def _delete_asset_if_unused(container, asset_content):
+    ar = unreal.AssetRegistryHelpers.get_asset_registry()
+
+    references = set()
+
+    for asset_path in asset_content:
+        asset = ar.get_asset_by_object_path(asset_path)
+        refs = ar.get_referencers(
+            asset.package_name,
+            unreal.AssetRegistryDependencyOptions(
+                include_soft_package_references=False,
+                include_hard_package_references=True,
+                include_searchable_names=False,
+                include_soft_management_references=False,
+                include_hard_management_references=False
+            ))
+        if not refs:
+            continue
+        references = references.union(set(refs))
+
+    # Filter out references that are in the Temp folder
+    cleaned_references = {
+        ref for ref in references if not str(ref).startswith("/Temp/")}
+
+    # Check which of the references are Levels
+    for ref in cleaned_references:
+        loaded_asset = unreal.EditorAssetLibrary.load_asset(ref)
+        if isinstance(loaded_asset, unreal.World):
+            # If there is at least a level, we can stop, we don't want to
+            # delete the container
+            return
+
+    unreal.log("Previous version unused, deleting...")
+
+    # No levels, delete the asset
+    unreal.EditorAssetLibrary.delete_directory(container["namespace"])
+
+
+def update_assets(params):
+    """
+    Update assets in the level.
+
+    Args:
+        params (str): string containing a dictionary with parameters:
+            containers (list): list of containers
+            selected (bool): whether to update only the selected actors
+    """
+    containers, selected = get_params(params, 'containers', 'selected')
+
+    allowed_families = ["model", "rig"]
+
+    # Get all the containers in the Unreal Project
+    all_containers = ls()
+
+    for container in containers:
+        container_dir = container.get("namespace")
+        if container.get("family") not in allowed_families:
+            unreal.log_warning(
+                f"Container {container_dir} is not supported.")
+            continue
+
+        # Get all containers with same asset_name but different objectName.
+        # These are the containers that need to be updated in the level.
+        sa_containers = [
+            i
+            for i in all_containers
+            if (
+                i.get("asset_name") == container.get("asset_name") and
+                i.get("objectName") != container.get("objectName")
+            )
+        ]
+
+        asset_content = unreal.EditorAssetLibrary.list_assets(
+            container_dir, recursive=True, include_folder=False
+        )
+
+        # Update all actors in level
+        for sa_cont in sa_containers:
+            sa_dir = sa_cont.get("namespace")
+            old_content = unreal.EditorAssetLibrary.list_assets(
+                sa_dir, recursive=True, include_folder=False
+            )
+
+            if container.get("family") == "rig":
+                _replace_skeletal_mesh_actors(
+                    old_content, asset_content, selected)
+                _replace_static_mesh_actors(
+                    old_content, asset_content, selected)
+            elif container.get("family") == "model":
+                if container.get("loader") == "PointCacheAlembicLoader":
+                    _replace_geometry_cache_actors(
+                        old_content, asset_content, selected)
+                else:
+                    _replace_static_mesh_actors(
+                        old_content, asset_content, selected)
+
+            unreal.EditorLevelLibrary.save_current_level()
+
+
+def delete_unused_assets(params):
+    """
+    Delete unused assets in the level.
+
+    Args:
+        params (str): string containing a dictionary with parameters:
+            containers (list): list of containers
+    """
+    containers = get_params(params, 'containers')
+    allowed_families = ["model", "rig"]
+
+    for container in containers:
+        container_dir = container.get("namespace")
+        if container.get("family") not in allowed_families:
+            unreal.log_warning(
+                f"Container {container_dir} is not supported.")
+            continue
+
+        asset_content = unreal.EditorAssetLibrary.list_assets(
+            container_dir, recursive=True, include_folder=False
+        )
+
+        _delete_asset_if_unused(container, asset_content)
