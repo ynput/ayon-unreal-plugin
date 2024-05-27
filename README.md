@@ -3,10 +3,10 @@ AYON Unreal Integration Plugin
 
 This repository holds the code for AYON Unreal integration plugin for various UE versions.
 
-Documentation of how to use AYON integration inside Unreal is [here](https://ayon.ynput.io/docs/artist_hosts_unreal).
+Documentation of how to use AYON integration inside Unreal is [here](https://ayon.ynput.io/docs/addon_unreal_artist).
 
-This repository should be used as git submodule in [AYON Desktop / OpenPype](https://github.com/ynput/OpenPype)
-sources under `/openpype/hosts/unreal/integration`. In the future, Unreal
+This repository should be used as git submodule in [AYON](https://github.com/Ynput/ayon-core)
+sources under `/ayon_core/hosts/unreal/integration`. In the future, Unreal
 integration will be moved to it's own AYON addon.
 
 Getting started
@@ -47,9 +47,9 @@ After the UBT path specify for which platform it will be compiled. in the `-Proj
 `BuildPlugin_[Ver].bat` runs the building process in the background. If you want to show the progress inside the command prompt, use the `BuildPlugin_[Ver]_Window.bat` file.
 
 Related links
---------------------
+-------------
 
-- **AYON Desktop** / **Openpype** repository: [https://github.com/ynput/OpenPype](https://github.com/ynput/OpenPype)
+- **AYON Core Addon** repository: [https://github.com/ynput/ayon-core](https://github.com/ynput/ayon-core)
 - **Unreal Engine**: [https://www.unrealengine.com/](https://www.unrealengine.com/)
 - **AYON / OpenPype** help: [https://ayon.ynput.io/](https://ayon.ynput.io/)
 - **AYON Docker** repository: [https://github.com/ynput/ayon-docker](https://github.com/ynput/ayon-docker)

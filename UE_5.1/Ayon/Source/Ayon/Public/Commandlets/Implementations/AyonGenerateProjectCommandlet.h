@@ -1,6 +1,5 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 #pragma once
-
 
 #include "GameProjectUtils.h"
 #include "Commandlets/AyonActionResult.h"
@@ -12,8 +11,8 @@ struct FProjectDescriptor;
 struct FProjectInformation;
 
 /**
-* @brief Structure which parses command line parameters and generates FProjectInformation
-*/
+ * @brief Structure which parses command line parameters and generates FProjectInformation
+ */
 USTRUCT()
 struct FAyonGenerateProjectParams
 {

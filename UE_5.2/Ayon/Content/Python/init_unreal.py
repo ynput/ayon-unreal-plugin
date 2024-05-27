@@ -1,3 +1,5 @@
+# Copyright (c) 2024 Ynput s.r.o.
+"""AYON Unreal Integration Plugin."""
 from functions import (
     log,
     delete_asset,

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 // Deprecation warning: this is left here just for backwards compatibility
 // and will be removed in next versions of Ayon.
 #pragma once
@@ -12,7 +12,6 @@ class AYON_API UOpenPypePublishInstance : public UPrimaryDataAsset
 	GENERATED_UCLASS_BODY()
 
 public:
-	/**
 	/**
 	 *	Retrieves all the assets which are monitored by the Publish Instance (Monitors assets in the directory which is
 	 *	placed in)

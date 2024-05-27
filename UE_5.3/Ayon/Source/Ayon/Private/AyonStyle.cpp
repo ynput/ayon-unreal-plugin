@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 
 #include "AyonStyle.h"
 #include "Framework/Application/SlateApplication.h"

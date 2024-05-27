@@ -1,1 +1,1 @@
-cmd /k "BuildPlugin_5-1.bat"
+cmd /k "BuildPlugin_5-2.bat"

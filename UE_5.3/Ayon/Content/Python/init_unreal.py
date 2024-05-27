@@ -1,3 +1,4 @@
+# Copyright (c) 2024 Ynput s.r.o.
 from functions import (
     log,
     delete_asset,

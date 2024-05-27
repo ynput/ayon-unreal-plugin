@@ -1,13 +1,10 @@
-// Copyright (c) 2023 Ynput s.r.o.
+// Copyright (c) 2024 Ynput s.r.o.
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Factories/Factory.h"
 #include "AyonAssetContainerFactory.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class AYON_API UAyonAssetContainerFactory : public UFactory
 {
