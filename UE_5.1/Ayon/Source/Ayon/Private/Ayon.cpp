@@ -4,6 +4,10 @@
 #include "ISettingsContainer.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
+#include "IWebSocket.h"
+#include "Framework/Commands/UICommandList.h"
+#include "Modules/ModuleManager.h"
+#include "Widgets/SWidget.h"
 #include "AyonStyle.h"
 #include "AyonCommands.h"
 #include "AyonPythonBridge.h"
@@ -18,29 +22,29 @@ static const FName AyonTabName("Ayon");
 // This function is triggered when the plugin is staring up
 void FAyonModule::StartupModule()
 {
+	if(!FModuleManager::Get().IsModuleLoaded("WebSockets"))
+	{
+		FModuleManager::Get().LoadModule("WebSockets");
+	}
+
 	FAyonStyle::Initialize();
 	FAyonStyle::ReloadTextures();
 	FAyonCommands::Register();
 
-	PluginCommands = MakeShareable(new FUICommandList);
+	FAyonCommunication::CreateSocket();
+	FAyonCommunication::ConnectToSocket();
 
-	PluginCommands->MapAction(
-		FAyonCommands::Get().AyonTools,
-		FExecuteAction::CreateRaw(this, &FAyonModule::MenuPopup),
-		FCanExecuteAction());
-	PluginCommands->MapAction(
-		FAyonCommands::Get().AyonToolsDialog,
-		FExecuteAction::CreateRaw(this, &FAyonModule::MenuDialog),
-		FCanExecuteAction());
+	MapCommands();
 
-	UToolMenus::RegisterStartupCallback(
-		FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FAyonModule::RegisterMenus));
+	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FAyonModule::RegisterMenus));
 
 	RegisterSettings();
 }
 
 void FAyonModule::ShutdownModule()
 {
+	FAyonCommunication::CloseConnection();
+
 	UToolMenus::UnRegisterStartupCallback(this);
 
 	UToolMenus::UnregisterOwner(this);
@@ -50,6 +54,12 @@ void FAyonModule::ShutdownModule()
 	FAyonCommands::Unregister();
 }
 
+TSharedRef<SWidget> FAyonModule::GenerateAyonMenuContent(TSharedRef<FUICommandList> InCommandList)
+{
+	FToolMenuContext MenuContext(InCommandList);
+
+	return UToolMenus::Get()->GenerateWidget("LevelEditor.LevelEditorToolBar.Ayon", MenuContext);
+}
 
 void FAyonModule::RegisterSettings()
 {
@@ -94,46 +104,68 @@ bool FAyonModule::HandleSettingsSaved()
 	return true;
 }
 
+void FAyonModule::CallMethod(const FString MethodName, const TArray<FString> Args)
+{
+	FAyonCommunication::CallMethod(MethodName, Args);
+}
+
 void FAyonModule::RegisterMenus()
 {
 	// Owner will be used for cleanup in call to UToolMenus::UnregisterOwner
 	FToolMenuOwnerScoped OwnerScoped(this);
 
+	RegisterAyonMenu();
+
+	UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.User");
+
+	FToolMenuSection& Section = ToolbarMenu->AddSection("Ayon");
+
+	FToolMenuEntry AyonEntry = FToolMenuEntry::InitComboButton(
+		"Ayon Menu",
+		FUIAction(),
+		FOnGetContent::CreateStatic(&FAyonModule::GenerateAyonMenuContent, AyonCommands.ToSharedRef()),
+		LOCTEXT("AyonMenu_Label", "Ayon"),
+		LOCTEXT("AyonMenu_Tooltip", "Open Ayon Menu"),
+		FSlateIcon(FAyonStyle::GetStyleSetName(), "Ayon.AyonMenu")
+	);
+	Section.AddEntry(AyonEntry);
+}
+
+void FAyonModule::RegisterAyonMenu()
+{
+	UToolMenu* AyonMenu = UToolMenus::Get()->RegisterMenu("LevelEditor.LevelEditorToolBar.Ayon");
 	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
-		{
-			// FToolMenuSection& Section = Menu->FindOrAddSection("Ayon");
-			FToolMenuSection& Section = Menu->AddSection(
-				"Ayon",
-				TAttribute<FText>(FText::FromString("Ayon")),
-				FToolMenuInsert("Programming", EToolMenuInsertType::Before)
-			);
-			Section.AddMenuEntryWithCommandList(FAyonCommands::Get().AyonTools, PluginCommands);
-			Section.AddMenuEntryWithCommandList(FAyonCommands::Get().AyonToolsDialog, PluginCommands);
-		}
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar.PlayToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("PluginTools");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(
-					FToolMenuEntry::InitToolBarButton(FAyonCommands::Get().AyonTools));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
+		FToolMenuSection& Section = AyonMenu->AddSection("Ayon");
+
+		Section.InitSection("Ayon", LOCTEXT("Ayon_Label", "Ayon"), FToolMenuInsert(NAME_None, EToolMenuInsertType::First));
+
+		Section.AddMenuEntry(FAyonCommands::Get().AyonLoaderTool);
+		Section.AddMenuEntry(FAyonCommands::Get().AyonCreatorTool);
+		Section.AddMenuEntry(FAyonCommands::Get().AyonSceneInventoryTool);
+		Section.AddMenuEntry(FAyonCommands::Get().AyonPublishTool);
 	}
 }
 
-
-void FAyonModule::MenuPopup()
+void FAyonModule::MapCommands()
 {
-	UAyonPythonBridge* bridge = UAyonPythonBridge::Get();
-	bridge->RunInPython_Popup();
-}
+	AyonCommands = MakeShareable(new FUICommandList);
 
-void FAyonModule::MenuDialog()
-{
-	UAyonPythonBridge* bridge = UAyonPythonBridge::Get();
-	bridge->RunInPython_Dialog();
+	AyonCommands->MapAction(
+		FAyonCommands::Get().AyonLoaderTool,
+		FExecuteAction::CreateStatic(&FAyonModule::CallMethod, FString("loader_tool"), TArray<FString>()),
+		FCanExecuteAction());
+	AyonCommands->MapAction(
+		FAyonCommands::Get().AyonCreatorTool,
+		FExecuteAction::CreateStatic(&FAyonModule::CallMethod, FString("creator_tool"), TArray<FString>()),
+		FCanExecuteAction());
+	AyonCommands->MapAction(
+		FAyonCommands::Get().AyonSceneInventoryTool,
+		FExecuteAction::CreateStatic(&FAyonModule::CallMethod, FString("scene_inventory_tool"), TArray<FString>()),
+		FCanExecuteAction());
+	AyonCommands->MapAction(
+		FAyonCommands::Get().AyonPublishTool,
+		FExecuteAction::CreateStatic(&FAyonModule::CallMethod, FString("publish_tool"), TArray<FString>()),
+		FCanExecuteAction());
 }
 
 IMPLEMENT_MODULE(FAyonModule, Ayon)
