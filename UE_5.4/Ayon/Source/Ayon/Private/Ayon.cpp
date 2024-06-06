@@ -10,6 +10,7 @@
 #include "Widgets/SWidget.h"
 #include "AyonStyle.h"
 #include "AyonCommands.h"
+#include "AyonCommunication.h"
 #include "AyonPythonBridge.h"
 #include "AyonSettings.h"
 #include "ToolMenus.h"
