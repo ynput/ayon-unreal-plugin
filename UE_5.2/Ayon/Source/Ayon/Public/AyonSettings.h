@@ -1,4 +1,5 @@
 // Copyright (c) 2024 Ynput s.r.o.
+
 #pragma once
 
 #include "CoreMinimal.h"
