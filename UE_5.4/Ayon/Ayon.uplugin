@@ -1,0 +1,25 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.1.2",
+	"FriendlyName": "Ayon",
+	"Description": "Ayon Integration",
+	"Category": "Ayon.Integration",
+	"CreatedBy": "YNPUT",
+	"CreatedByURL": "https://ayon.ynput.io",
+	"DocsURL": "https://ayon.ynput.io/docs/artist_hosts_unreal",
+	"SupportURL": "https://ynput.io/",
+	"CanContainContent": true,
+	"EngineVersion": "5.4",
+	"IsExperimentalVersion": false,
+	"Installed": true,
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dcf9786222b9403aa2f6310d6c388220",
+	"Modules": [
+		{
+			"Name": "Ayon",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": ["Win64", "Linux"]
+		}
+	]
+}
