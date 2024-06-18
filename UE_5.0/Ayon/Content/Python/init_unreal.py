@@ -3,19 +3,13 @@ import unreal
 
 ayon_detected = True
 try:
+    # AYON support (both ayon-core and ayon-unreal addon locations)
+    from ayon_core.pipeline import install_host
+
     try:
-        # AYON support (both ayon-core and ayon-unreal addn locations)
-        from ayon_core.pipeline import install_host
-
-        try:
-            from ayon_unreal.api import UnrealHost
-        except ImportError:
-            from ayon_core.hosts.unreal.api import UnrealHost
-
+        from ayon_unreal.api import UnrealHost
     except ImportError:
-        # OpenPype support
-        from openpype.pipeline import install_host
-        from openpype.hosts.unreal.api import UnrealHost
+        from ayon_core.hosts.unreal.api import UnrealHost
 
     ayon_host = UnrealHost()
 except ImportError as exc:
