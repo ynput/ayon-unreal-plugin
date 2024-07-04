@@ -1,5 +1,19 @@
 # Copyright (c) 2024 Ynput s.r.o.
 import unreal
+import qtpy
+try:
+    from qtpy import QtWidgets
+
+except qtpy.QtBindingNotFoundError as exc:
+    # < UE 5.4 PySide2
+    # >= UE5.4 PySide6
+    message = "PySide 6 is missing, please visit to https://ayon.ynput.io/docs/addon_unreal_admin for more installation info"
+    title = "Notification"
+    message_type = unreal.AppMsgType.OK
+    default_value = unreal.AppReturnType.NO
+
+    # Show the message dialog
+    unreal.EditorDialog.show_message(title, message, message_type, default_value)
 
 ayon_detected = True
 try:
