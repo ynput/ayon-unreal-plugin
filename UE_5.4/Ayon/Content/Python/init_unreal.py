@@ -8,7 +8,7 @@ except ImportError as exc:
     # directly from `import qtpy`
     if exc.__class__.__name__ != "QtBindingsNotFoundError":
         raise exc
-    message = "PySide 2 is missing, please visit to https://ayon.ynput.io/docs/addon_unreal_admin for more installation info"
+    message = "PySide 6 is missing, please visit to https://ayon.ynput.io/docs/addon_unreal_admin for more installation info"
     title = "Notification"
     message_type = unreal.AppMsgType.OK
     default_value = unreal.AppReturnType.NO
