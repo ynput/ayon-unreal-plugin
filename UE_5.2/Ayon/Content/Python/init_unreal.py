@@ -1,5 +1,20 @@
 # Copyright (c) 2024 Ynput s.r.o.
 import unreal
+try:
+    import qtpy
+    from qtpy import QtWidgets
+except ImportError as exc:
+    # this is because `QtBingingsNotFoundError` exception is risen
+    # directly from `import qtpy`
+    if exc.__class__.__name__ != "QtBindingsNotFoundError":
+        raise exc
+    message = "PySide 2 is missing, please visit to https://ayon.ynput.io/docs/addon_unreal_admin for more installation info"
+    title = "Notification"
+    message_type = unreal.AppMsgType.OK
+    default_value = unreal.AppReturnType.NO
+
+    # Show the message dialog
+    unreal.EditorDialog.show_message(title, message, message_type, default_value)
 
 ayon_detected = True
 try:
