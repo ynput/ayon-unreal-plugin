@@ -1,0 +1,1 @@
+cmd /k "BuildPlugin_5-5.bat"
