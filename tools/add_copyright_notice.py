@@ -45,6 +45,7 @@ for entry in os.scandir(current_path):
         continue
     if entry.is_file():
         continue
+    print(f"Scanning: {entry.path}")
     for ue_entry in _scan_hierarchy(entry.path):
         if ue_entry.is_file() and Path(ue_entry.path).suffix in supported_exts:
             has_copyright_comment(ue_entry.path)
