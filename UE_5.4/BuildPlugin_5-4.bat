@@ -3,4 +3,4 @@
 :: AYON_UNREAL_ROOT should point to unreal addon root
 
 SET UNREAL_ENGINE_54=%PROGRAMFILES%\Epic Games\UE_5.4
-%UNREAL_ENGINE_54%\Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -plugin=%AYON_UNREAL_ROOT%\integration\UE_5.4\Ayon\Ayon.uplugin" -Package="%~dp0..\build\UE_5.4"
+%UNREAL_ENGINE_54%\Engine\Build\BatchFiles\RunUAT.bat BuildPlugin -plugin=%AYON_UNREAL_ROOT%\integration\UE_5.4\Ayon\Ayon.uplugin -Package="%~dp0..\build\UE_5.4"
