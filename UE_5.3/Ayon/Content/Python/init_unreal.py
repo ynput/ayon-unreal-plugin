@@ -32,6 +32,11 @@ except ImportError as exc:
     ayon_detected = False
     unreal.log_error(f"Ayon: cannot load Ayon integration [ {exc} ]")
 
+try:
+    import RemoteRender
+except ImportError as exc:
+    unreal.log_error(f"Ayon: cannot load RemoteRender [ {exc} ]")
+
 if ayon_detected:
     install_host(ayon_host)
 
