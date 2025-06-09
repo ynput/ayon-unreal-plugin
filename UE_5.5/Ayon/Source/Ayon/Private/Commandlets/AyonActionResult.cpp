@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Ynput s.r.o.
+// Copyright (c) 2025 Ynput s.r.o.
 
 #include "Commandlets/AyonActionResult.h"
 #include "Logging/Ayon_Log.h"
