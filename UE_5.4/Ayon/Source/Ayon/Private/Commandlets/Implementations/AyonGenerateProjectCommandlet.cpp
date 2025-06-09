@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Ynput s.r.o.
+// Copyright (c) 2025 Ynput s.r.o.
 #include "Commandlets/Implementations/AyonGenerateProjectCommandlet.h"
 
 #include "GameProjectUtils.h"

@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Ynput s.r.o.
+// Copyright (c) 2025 Ynput s.r.o.
 #pragma once
 #include "CoreMinimal.h"
 #include "Styling/SlateStyle.h"
