@@ -17,7 +17,7 @@ bool UAyonLib::SetFolderColor(const FString& FolderPath, const FLinearColor& Fol
 	{
 		const TSharedPtr<FLinearColor> LinearColor = MakeShared<FLinearColor>(FolderColor);
 
-		AssetViewUtils::SaveColor(FolderPath, LinearColor, true);
+		AssetViewUtils::SetPathColor(FolderPath, LinearColor);
 		UE_LOG(LogAssetData, Display, TEXT("A color {%s} has been set to folder \"%s\""), *LinearColor->ToString(),
 		       *FolderPath)
 		return true;

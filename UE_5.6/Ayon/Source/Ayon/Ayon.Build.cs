@@ -8,7 +8,7 @@ public class Ayon : ModuleRules
 	{
 	    DefaultBuildSettings = BuildSettingsVersion.V2;
 	    bLegacyPublicIncludePaths = false;
-	    ShadowVariableWarningLevel = WarningLevel.Error;
+	    CppCompileWarningSettings.ShadowVariableWarningLevel = WarningLevel.Error;
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		//IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_0;
 		
