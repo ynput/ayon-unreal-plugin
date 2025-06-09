@@ -10,7 +10,7 @@
 	"DocsURL": "https://ayon.ynput.io/docs/artist_hosts_unreal",
 	"SupportURL": "https://ynput.io/",
 	"CanContainContent": true,
-	"EngineVersion": "5.5",
+	"EngineVersion": "5.6",
 	"IsExperimentalVersion": false,
 	"Installed": true,
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dcf9786222b9403aa2f6310d6c388220",
