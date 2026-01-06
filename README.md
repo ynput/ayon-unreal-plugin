@@ -3,17 +3,15 @@ AYON Unreal Integration Plugin
 
 This repository holds the code for AYON Unreal integration plugin for various UE versions.
 
-Documentation of how to use AYON integration inside Unreal is [here](https://ayon.ynput.io/docs/addon_unreal_artist).
-
-This repository should be used as git submodule in [AYON](https://github.com/Ynput/ayon-core)
-sources under `/ayon_core/hosts/unreal/integration`. In the future, Unreal
-integration will be moved to it's own AYON addon.
+Documentation of how to use AYON integration inside Unreal is [here](https://help.ayon.app/articles/0086198-about-unreal-addon).
 
 Getting started
 ---------------
 
-This plugin meant to be used directly by AYON (OpenPype) either through Epic Marketplace or manually, when
+This plugin meant to be used directly by AYON (OpenPype) either through FAB / Epic Marketplace or manually, when
 new Unreal project is started via AYON.
+
+You can find built plugins for various Unreal Engine versions on [FAB](https://fab.com/s/cfd5e8fdd0a0)
 
 For every supported Unreal version there is one plugin (**Ayon**) and one project (**CommandletProject**).
 
@@ -49,8 +47,8 @@ After the UBT path specify for which platform it will be compiled. in the `-Proj
 Related links
 -------------
 
-- **AYON Core Addon** repository: [https://github.com/ynput/ayon-core](https://github.com/ynput/ayon-core)
+- **AYON Unreal Addon** repository: [https://github.com/ynput/ayon-unreal](https://github.com/ynput/ayon-unreal)
 - **Unreal Engine**: [https://www.unrealengine.com/](https://www.unrealengine.com/)
-- **AYON / OpenPype** help: [https://ayon.ynput.io/](https://ayon.ynput.io/)
+- **AYON** help: [https://help.ayon.app](https://help.ayon.app)
 - **AYON Docker** repository: [https://github.com/ynput/ayon-docker](https://github.com/ynput/ayon-docker)
 - [Development Setup guides for Unreal](https://docs.unrealengine.com/5.0/en-US/setting-up-your-development-environment-for-cplusplus-in-unreal-engine/)
