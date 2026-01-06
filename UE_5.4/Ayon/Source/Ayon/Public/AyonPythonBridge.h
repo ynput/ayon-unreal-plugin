@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Ynput s.r.o.
+// Copyright (c) 2026 Ynput s.r.o.
 #pragma once
 #include "AyonPythonBridge.generated.h"
 
