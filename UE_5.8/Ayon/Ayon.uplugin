@@ -10,7 +10,7 @@
 	"DocsURL": "https://help.ayon.app/articles/0086198-about-unreal-addon",
 	"SupportURL": "https://ynput.io/",
 	"CanContainContent": true,
-	"EngineVersion": "5.1",
+	"EngineVersion": "5.8",
 	"IsExperimentalVersion": false,
 	"Installed": true,
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/dcf9786222b9403aa2f6310d6c388220",
